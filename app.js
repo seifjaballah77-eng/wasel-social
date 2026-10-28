@@ -57,13 +57,31 @@ async function sendImage(file){
  if(error){status("رُفعت الصورة لكن تعذر إرسالها: "+error.message,true);return;}
  status("");await loadMessages();
 }
+async function ensureDisplayName(){
+ const {data:profile,error}=await sb.from("profiles").select("display_name").eq("id",user.id).maybeSingle();
+ if(error)throw new Error("تعذر تحميل اسم الحساب: "+error.message);
+ const current=(profile?.display_name||"").trim();
+ if(current && current!=="زائر" && !current.startsWith("زائر-"))return;
+ const overlay=$("nameSetup"),form=$("nameSetupForm"),field=$("displayNameInput"),err=$("nameSetupError"),save=$("saveDisplayName");
+ overlay.hidden=false;field.value="";field.focus();
+ await new Promise(resolve=>{
+  form.onsubmit=async e=>{
+   e.preventDefault();const name=field.value.trim();
+   if(name.length<2||name.length>30){err.textContent="اكتب اسمًا من حرفين إلى 30 حرفًا.";err.hidden=false;return;}
+   save.disabled=true;save.textContent="جارٍ الحفظ…";err.hidden=true;
+   const {error:updateError}=await sb.from("profiles").update({display_name:name}).eq("id",user.id);
+   if(updateError){err.textContent="تعذر حفظ الاسم: "+updateError.message;err.hidden=false;save.disabled=false;save.textContent="حفظ ومتابعة";return;}
+   overlay.hidden=true;form.onsubmit=null;resolve();
+  };
+ });
+}
 async function init(){
  if(!configured){$("identity").textContent="بانتظار الإعداد";$("setupNotice").hidden=false;$("setupNotice").textContent="باقي خطوة واحدة قبل التشغيل: أضف رابط Supabase ومفتاح anon/publishable في app.js، ثم نفّذ schema.sql في Supabase. لا توجد شاشة تسجيل دخول؛ سيُنشأ حساب زائر تلقائيًا.";return;}
  sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
  const {data:s,error:sessionError}=await sb.auth.getSession();if(sessionError)throw sessionError;
  if(!s.session){const {error}=await sb.auth.signInAnonymously();if(error)throw new Error("فعّل Anonymous Sign-Ins في Supabase: "+error.message);}
  const {data:a,error}=await sb.auth.getUser();if(error||!a.user)throw new Error(error?.message||"تعذر إنشاء حساب زائر.");
- user=a.user;$("identity").textContent="حسابك "+shortId(user.id);await loadPeople();await startPresence();
+ user=a.user;$("identity").textContent="حسابك "+shortId(user.id);await ensureDisplayName();await loadPeople();await startPresence();
  sb.channel("wasel-message-in-"+user.id).on("postgres_changes",{event:"INSERT",schema:"public",table:"messages",filter:"recipient_id=eq."+user.id},m=>{if(selected&&m.new.sender_id===selected.id)loadMessages();else status("وصلتك رسالة جديدة من "+shortId(m.new.sender_id));}).subscribe();
  sb.channel("wasel-message-out-"+user.id).on("postgres_changes",{event:"INSERT",schema:"public",table:"messages",filter:"sender_id=eq."+user.id},m=>{if(selected&&m.new.recipient_id===selected.id)loadMessages();}).subscribe();
  sb.channel("wasel-profile-updates").on("postgres_changes",{event:"INSERT",schema:"public",table:"profiles"},()=>loadPeople()).subscribe();
