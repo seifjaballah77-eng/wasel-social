@@ -84,4 +84,10 @@ drop policy if exists "authenticated users read chat media" on storage.objects;
 create policy "authenticated users read chat media" on storage.objects for select to authenticated using (bucket_id='chat-media');
 drop policy if exists "users delete own chat media" on storage.objects;
 create policy "users delete own chat media" on storage.objects for delete to authenticated using (bucket_id='chat-media' and (storage.foldername(name))[1]=auth.uid()::text);
--- This is an MVP: restrict who can discover profiles before public launch and add abuse controls.
+
+-- Explicit API grants for the tables used by the browser client.
+grant usage on schema public to authenticated;
+grant select, insert, update on public.profiles to authenticated;
+grant select, insert, delete on public.messages to authenticated;
+grant select, insert, delete on public.posts to authenticated;
+\n-- This is an MVP: restrict who can discover profiles before public launch and add abuse controls.
