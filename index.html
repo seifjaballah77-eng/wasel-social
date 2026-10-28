@@ -1,5 +1,22 @@
 <!doctype html>
 <html lang="ar" dir="rtl">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Wasel</title></head>
-<body><main><h1>Wasel</h1><p>جاري إعداد الموقع. يرجى تحديث الصفحة لاحقًا.</p></main></body>
-</html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#2563eb">
+  <title>واصل | تواصل اجتماعي</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <header class="topbar"><div class="brand">واصل <span>Wasel</span></div><div id="identity" class="muted">جارٍ الاتصال…</div></header>
+  <main class="layout">
+    <aside class="panel"><h2>الأشخاص</h2><p class="muted small">اختر شخصًا لبدء محادثة.</p><div id="people" class="people"></div></aside>
+    <section class="maincol">
+      <section class="panel"><h2>منشور جديد</h2><form id="postForm"><textarea id="postText" maxlength="2000" placeholder="ماذا تريد أن تشارك؟"></textarea><div class="formrow"><label class="filelabel">إرفاق صورة <input id="postImage" type="file" accept="image/png,image/jpeg,image/webp"></label><button type="submit">نشر</button></div></form></section>
+      <section class="panel"><h2>آخر المنشورات</h2><div id="feed" class="feed"><p class="muted">جارٍ تحميل المنشورات…</p></div></section>
+    </section>
+    <aside class="panel chatpanel"><h2 id="chatTitle">الرسائل</h2><div id="chatLog" class="chatlog"><p class="muted small">اختر شخصًا من القائمة لعرض المحادثة.</p></div><form id="messageForm" class="messageform"><input id="messageText" maxlength="2000" placeholder="اكتب رسالة…" autocomplete="off" disabled><button id="sendMessage" type="submit" disabled>إرسال</button></form><p id="callStatus" class="muted small"></p></aside>
+  </main>
+  <footer>نسخة تجريبية — لا ترسل معلومات حساسة.</footer><script src="app.js"></script>
+</body></html>
