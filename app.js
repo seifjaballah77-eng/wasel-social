@@ -1,6 +1,6 @@
 // Wasel: automatic anonymous session, live presence, direct messages and private image sharing.
-const SUPABASE_URL = "YOUR_SUPABASE_PROJECT_URL";
-const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_OR_PUBLISHABLE_KEY";
+const SUPABASE_URL = "https://qlcrvffejuscbftjotmp.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_nY14ZzU_YiOfBrySQlBuFA_G-jg2VOc";
 const $ = id => document.getElementById(id);
 const configured = SUPABASE_URL.startsWith("https://") && !SUPABASE_URL.includes("YOUR_") && !SUPABASE_ANON_KEY.includes("YOUR_");
 let sb,user,selected=null,people=[],onlineIds=new Set(),presenceChannel;
