@@ -1,121 +1,133 @@
-// Wasel: automatic anonymous session, live presence, direct messages and private image sharing.
-const SUPABASE_URL = "https://qlcrvffejuscbftjotmp.supabase.co";
-const SUPABASE_ANON_KEY = "sb_publishable_nY14ZzU_YiOfBrySQlBuFA_G-jg2VOc";
+// Wasel Personal Chat — single-user, browser-local version.
+// Messages and images stay in this browser's localStorage; no account or Supabase required.
 const $ = id => document.getElementById(id);
-const configured = SUPABASE_URL.startsWith("https://") && !SUPABASE_URL.includes("YOUR_") && !SUPABASE_ANON_KEY.includes("YOUR_");
-let sb,user,selected=null,people=[],onlineIds=new Set(),presenceChannel;
-const shortId=id=>"زائر-"+String(id).slice(0,5).toUpperCase();
-function status(t,error=false){$("callStatus").textContent=t;$("callStatus").className="statusline"+(error?" error":"");}
-function fmt(t){return new Date(t).toLocaleTimeString("ar",{hour:"2-digit",minute:"2-digit"});}
-function renderPeople(){
- const root=$("people"),q=$("peopleSearch").value.trim().toLowerCase();root.replaceChildren();
- const visible=people.filter(p=>(p.display_name||shortId(p.id)).toLowerCase().includes(q)||shortId(p.id).toLowerCase().includes(q));
- $("peopleCount").textContent=String(people.length);
- if(!visible.length){root.innerHTML='<div class="empty">'+(people.length?"لا توجد حسابات تطابق البحث.":"لا يوجد أشخاص بعد. أرسل الرابط للشخص الآخر واطلب منه فتحه.")+'</div>';return;}
- visible.forEach(p=>{const b=document.createElement("button");b.className="person"+(selected?.id===p.id?" active":"");const name=p.display_name||shortId(p.id);b.innerHTML='<span class="avatar">'+name.slice(-1).replace(/[&<>"]/g,"")+'</span><span class="personmeta"><strong></strong><small class="personstatus"><i class="dot '+(onlineIds.has(p.id)?"online":"")+'"></i><span class="'+(onlineIds.has(p.id)?"online":"offline")+'">'+(onlineIds.has(p.id)?"متصل الآن":"غير متصل")+'</span></small></span>';b.querySelector("strong").textContent=name;b.onclick=()=>selectPerson(p);root.appendChild(b);});
+const STORE_KEY = "wasel-personal-chat-v1";
+const PROFILE_KEY = "wasel-personal-name-v1";
+let selected = true;
+let messages = [];
+function status(text, error=false) {
+  $("callStatus").textContent = text;
+  $("callStatus").className = "statusline" + (error ? " error" : "");
 }
-async function loadPeople(){
- const {data,error}=await sb.from("profiles").select("id,display_name,created_at").neq("id",user.id).order("created_at",{ascending:false}).limit(200);
- if(error){$("people").innerHTML='<div class="empty">تعذر تحميل الحسابات. تأكد من إعداد قاعدة البيانات.</div>';status("خطأ تحميل الحسابات: "+error.message,true);return;}
- people=data||[];renderPeople();
+function timeLabel(value) {
+  return new Date(value).toLocaleTimeString("ar-TN", {hour:"2-digit",minute:"2-digit"});
 }
-async function startPresence(){
- presenceChannel=sb.channel("wasel-presence",{config:{presence:{key:user.id}}});
- presenceChannel.on("presence",{event:"sync"},()=>{const state=presenceChannel.presenceState();onlineIds=new Set(Object.keys(state).filter(id=>id!==user.id));renderPeople();if(selected)$("chatSubtitle").textContent=onlineIds.has(selected.id)?"متصل الآن · يمكنك مراسلته":"غير متصل · ستظهر الرسالة عند عودته";});
- presenceChannel.subscribe(async s=>{if(s==="SUBSCRIBED"){const {error}=await presenceChannel.track({user_id:user.id,online_at:new Date().toISOString()});if(error)status("تعذر تحديث حالة الاتصال: "+error.message,true);}});
+function readMessages() {
+  try {
+    const value = JSON.parse(localStorage.getItem(STORE_KEY) || "[]");
+    return Array.isArray(value) ? value : [];
+  } catch { return []; }
 }
-async function addMessage(m){
- const d=document.createElement("div");d.className="bubble"+(m.sender_id===user.id?" mine":"");
- if(m.kind==="image"&&m.media_path){const img=document.createElement("img");img.alt="صورة مرسلة";img.loading="lazy";d.appendChild(img);const {data,error}=await sb.storage.from("chat-media").createSignedUrl(m.media_path,3600);if(error){img.alt="تعذر تحميل الصورة";}else img.src=data.signedUrl;}
- else {const body=document.createElement("div");body.textContent=m.body||"";d.appendChild(body);}
- const stamp=document.createElement("span");stamp.className="stamp";stamp.textContent=fmt(m.created_at);d.appendChild(stamp);$("chatLog").appendChild(d);
+function saveMessages() {
+  try {
+    localStorage.setItem(STORE_KEY, JSON.stringify(messages));
+    return true;
+  } catch {
+    status("مساحة التخزين ممتلئة. احذف بعض الصور أو الرسائل القديمة.", true);
+    return false;
+  }
 }
-async function loadMessages(){
- if(!selected)return;
- const {data,error}=await sb.from("messages").select("id,sender_id,recipient_id,body,kind,media_path,created_at").or("and(sender_id.eq."+user.id+",recipient_id.eq."+selected.id+"),and(sender_id.eq."+selected.id+",recipient_id.eq."+user.id+")").in("kind",["text","image"]).order("created_at",{ascending:true}).limit(300);
- if(error){status("تعذر تحميل المحادثة: "+error.message,true);return;}
- $("chatLog").replaceChildren();for(const m of data||[])await addMessage(m);$("chatLog").scrollTop=$("chatLog").scrollHeight;
+function renderPeople() {
+  const root = $("people");
+  root.replaceChildren();
+  const query = $("peopleSearch").value.trim().toLowerCase();
+  $("peopleCount").textContent = "1";
+  if ("محادثتي الخاصة".includes(query) || "ملاحظاتي".includes(query)) {
+    const button = document.createElement("button");
+    button.className = "person active";
+    button.innerHTML = '<span class="avatar">و</span><span class="personmeta"><strong>محادثتي الخاصة</strong><small class="personstatus"><i class="dot online"></i><span class="online">محفوظة على هذا الجهاز</span></small></span>';
+    button.onclick = renderMessages;
+    root.appendChild(button);
+  } else {
+    root.innerHTML = '<div class="empty">لا توجد نتائج.</div>';
+  }
 }
-async function selectPerson(p){
- selected=p;$("chatTitle").textContent=p.display_name||shortId(p.id);$("chatSubtitle").textContent=onlineIds.has(p.id)?"متصل الآن · يمكنك مراسلته":"غير متصل · ستظهر الرسالة عند عودته";$("chatAvatar").textContent=(p.display_name||"و").slice(-1);$("messageText").disabled=false;$("sendMessage").disabled=false;$("chatImage").disabled=false;status("");renderPeople();await loadMessages();$("messageText").focus();
+function renderMessages() {
+  const log = $("chatLog");
+  log.replaceChildren();
+  if (!messages.length) {
+    const welcome = document.createElement("div");
+    welcome.className = "welcome";
+    welcome.innerHTML = '<div class="welcomeicon">✉</div><h3>مساحتك الخاصة</h3><p>اكتب رسالة لنفسك أو أرفق صورة. ستُحفظ على هذا المتصفح.</p>';
+    log.appendChild(welcome);
+  }
+  for (const message of messages) {
+    const bubble = document.createElement("div");
+    bubble.className = "bubble mine";
+    if (message.image) {
+      const image = document.createElement("img");
+      image.alt = "صورة محفوظة";
+      image.loading = "lazy";
+      image.src = message.image;
+      image.style.maxWidth = "100%";
+      image.style.borderRadius = "12px";
+      bubble.appendChild(image);
+    }
+    if (message.text) {
+      const body = document.createElement("div");
+      body.textContent = message.text;
+      bubble.appendChild(body);
+    }
+    const stamp = document.createElement("span");
+    stamp.className = "stamp";
+    stamp.textContent = timeLabel(message.createdAt);
+    bubble.appendChild(stamp);
+    log.appendChild(bubble);
+  }
+  log.scrollTop = log.scrollHeight;
 }
-async function sendText(){
- const body=$("messageText").value.trim();if(!body||!selected)return;
- $("sendMessage").disabled=true;const {error}=await sb.from("messages").insert({sender_id:user.id,recipient_id:selected.id,body,kind:"text"});$("sendMessage").disabled=false;
- if(error){status("لم تُرسل الرسالة: "+error.message,true);return;}
- $("messageText").value="";await loadMessages();$("messageText").focus();
+function sendText() {
+  const field = $("messageText");
+  const text = field.value.trim();
+  if (!text) return;
+  messages.push({id:crypto.randomUUID ? crypto.randomUUID() : String(Date.now()), text, createdAt:new Date().toISOString()});
+  if (!saveMessages()) { messages.pop(); return; }
+  field.value = "";
+  status("تم حفظ الرسالة على هذا الجهاز.");
+  renderMessages();
+  field.focus();
 }
-async function sendImage(file){
- if(!selected||!file)return;
- if(!["image/jpeg","image/png","image/webp","image/gif"].includes(file.type)){status("اختر صورة JPG أو PNG أو WEBP أو GIF.",true);return;}
- if(file.size>8*1024*1024){status("حجم الصورة الأقصى 8MB.",true);return;}
- status("جارٍ إرسال الصورة…");$("chatImage").disabled=true;
- const path=user.id+"/"+crypto.randomUUID()+"-"+file.name.replace(/[^a-zA-Z0-9._-]/g,"_");
- const {error:uploadError}=await sb.storage.from("chat-media").upload(path,file,{contentType:file.type});
- if(uploadError){status("تعذر رفع الصورة: "+uploadError.message,true);$("chatImage").disabled=false;return;}
- const {error}=await sb.from("messages").insert({sender_id:user.id,recipient_id:selected.id,body:"",kind:"image",media_path:path});$("chatImage").disabled=false;
- if(error){status("رُفعت الصورة لكن تعذر إرسالها: "+error.message,true);return;}
- status("");await loadMessages();
-}
-async function ensureDisplayName(){
- const {data:profile,error}=await sb.from("profiles").select("display_name").eq("id",user.id).maybeSingle();
- if(error)throw new Error("تعذر تحميل اسم الحساب: "+error.message);
- const current=(profile?.display_name||"").trim();
- if(current && current!=="زائر" && !current.startsWith("زائر-"))return;
- const overlay=$("nameSetup"),form=$("nameSetupForm"),field=$("displayNameInput"),err=$("nameSetupError"),save=$("saveDisplayName");
- overlay.hidden=false;field.value="";field.focus();
- await new Promise(resolve=>{
-  form.onsubmit=async e=>{
-   e.preventDefault();const name=field.value.trim();
-   if(name.length<2||name.length>30){err.textContent="اكتب اسمًا من حرفين إلى 30 حرفًا.";err.hidden=false;return;}
-   save.disabled=true;save.textContent="جارٍ الحفظ…";err.hidden=true;
-   const {error:updateError}=await sb.from("profiles").update({display_name:name}).eq("id",user.id);
-   if(updateError){err.textContent="تعذر حفظ الاسم: "+updateError.message;err.hidden=false;save.disabled=false;save.textContent="حفظ ومتابعة";return;}
-   overlay.hidden=true;form.onsubmit=null;resolve();
+function sendImage(file) {
+  if (!file) return;
+  if (!["image/jpeg","image/png","image/webp","image/gif"].includes(file.type)) {
+    status("اختر صورة JPG أو PNG أو WEBP أو GIF.", true); return;
+  }
+  if (file.size > 2 * 1024 * 1024) {
+    status("للحفاظ على مساحة التخزين، اختر صورة أصغر من 2MB.", true); return;
+  }
+  const reader = new FileReader();
+  reader.onload = () => {
+    messages.push({id:String(Date.now()), image:reader.result, createdAt:new Date().toISOString()});
+    if (!saveMessages()) { messages.pop(); return; }
+    status("تم حفظ الصورة على هذا الجهاز.");
+    renderMessages();
   };
- });
+  reader.onerror = () => status("تعذر قراءة الصورة.", true);
+  reader.readAsDataURL(file);
 }
-async function init(){
- if(!configured){$("identity").textContent="بانتظار الإعداد";$("setupNotice").hidden=false;$("setupNotice").textContent="باقي خطوة واحدة قبل التشغيل: أضف رابط Supabase ومفتاح anon/publishable في app.js، ثم نفّذ schema.sql في Supabase. لا توجد شاشة تسجيل دخول؛ سيُنشأ حساب زائر تلقائيًا.";return;}
- sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
- const {data:s,error:sessionError}=await sb.auth.getSession();if(sessionError)throw sessionError;
- if(!s.session){const {error}=await sb.auth.signInAnonymously();if(error)throw new Error("فعّل Anonymous Sign-Ins في Supabase: "+error.message);}
- const {data:a,error}=await sb.auth.getUser();if(error||!a.user)throw new Error(error?.message||"تعذر إنشاء حساب زائر.");
- user=a.user;$("identity").textContent="حسابك "+shortId(user.id);await ensureDisplayName();await loadPeople();await startPresence();
- sb.channel("wasel-message-in-"+user.id).on("postgres_changes",{event:"INSERT",schema:"public",table:"messages",filter:"recipient_id=eq."+user.id},m=>{if(selected&&m.new.sender_id===selected.id)loadMessages();else status("وصلتك رسالة جديدة من "+shortId(m.new.sender_id));}).subscribe();
- sb.channel("wasel-message-out-"+user.id).on("postgres_changes",{event:"INSERT",schema:"public",table:"messages",filter:"sender_id=eq."+user.id},m=>{if(selected&&m.new.recipient_id===selected.id)loadMessages();}).subscribe();
- sb.channel("wasel-profile-updates").on("postgres_changes",{event:"INSERT",schema:"public",table:"profiles"},()=>loadPeople()).subscribe();
- setInterval(loadPeople,10000);
+function setupName() {
+  const saved = localStorage.getItem(PROFILE_KEY) || "";
+  $("identity").textContent = saved ? "أهلاً، " + saved : "مساحتك الشخصية";
+  $("chatTitle").textContent = "محادثتي الخاصة";
+  $("chatSubtitle").textContent = "رسائل وصور محفوظة على هذا الجهاز";
+  $("chatAvatar").textContent = "و";
+  $("messageText").disabled = false;
+  $("sendMessage").disabled = false;
+  $("chatImage").disabled = false;
+  $("setupNotice").hidden = false;
+  $("setupNotice").textContent = "هذه نسخة شخصية لا تحتاج إلى حساب. الرسائل والصور محفوظة في متصفح هذا الجهاز فقط، وليست متاحة تلقائيًا على أجهزة أخرى.";
+  $("privacyhint").textContent = "نصيحة: لا تمسح بيانات المتصفح إذا أردت الاحتفاظ برسائلك.";
+  const oldOverlay = $("nameSetup");
+  oldOverlay.hidden = true;
+  renderPeople();
 }
-$("peopleSearch").addEventListener("input",renderPeople);
-$("messageForm").addEventListener("submit",e=>{e.preventDefault();sendText();});
-$("chatImage").addEventListener("change",async e=>{const f=e.target.files?.[0];if(f)await sendImage(f);e.target.value="";});
-init().catch(e=>{
- console.error(e);
- $("identity").textContent="الاتصال غير مكتمل";
- const notice=$("setupNotice");
- notice.hidden=false;
- notice.replaceChildren();
- const message=document.createElement("p");
- message.textContent="تعذر تشغيل واصل: "+e.message;
- notice.appendChild(message);
- if(String(e.message).includes("Anonymous sign-ins are disabled")){
-  const help=document.createElement("p");
-  help.textContent="الكود جاهز للدخول بالاسم فقط، لكن Supabase يجب أن يسمح بإنشاء حساب زائر آمن. لا تستخدم سياسات عامة لفتح الرسائل.";
-  notice.appendChild(help);
-  const link=document.createElement("a");
-  link.href="https://supabase.com/dashboard/project/qlcrvffejuscbftjotmp/auth/providers";
-  link.target="_blank";
-  link.rel="noopener noreferrer";
-  link.textContent="فتح إعدادات تسجيل الدخول في Supabase";
-  link.style.cssText="display:inline-block;margin:8px 0;color:#2855dc;font-weight:700";
-  notice.appendChild(link);
-  const retry=document.createElement("button");
-  retry.type="button";
-  retry.textContent="إعادة المحاولة بعد تفعيل الإعداد";
-  retry.style.cssText="display:block;margin-top:8px;border:0;border-radius:10px;padding:10px 14px;background:#315bd8;color:white;font:inherit;cursor:pointer";
-  retry.onclick=()=>window.location.reload();
-  notice.appendChild(retry);
- }
- status("تعذر الاتصال بالخدمة.",true);
+$("peopleSearch").addEventListener("input", renderPeople);
+$("messageForm").addEventListener("submit", event => { event.preventDefault(); sendText(); });
+$("chatImage").addEventListener("change", event => {
+  const file = event.target.files && event.target.files[0];
+  if (file) sendImage(file);
+  event.target.value = "";
 });
+messages = readMessages();
+setupName();
+renderMessages();
