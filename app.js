@@ -167,6 +167,8 @@ async function start(){
   $("setupNotice").hidden=false;
   $("setupNotice").textContent="ملاحظة: يلزم تشغيل ملف schema.sql المحدّث في Supabase مرة واحدة لتفعيل البحث والرسائل بين الأجهزة.";
   $("messageText").disabled=true;$("sendMessage").disabled=true;$("chatImage").disabled=true;
-  if(name){await refresh();setInterval(refresh,5000);}
+  renderPeople();
+  if(name) await refresh();
+  setInterval(refresh,5000);
 }
 start();
