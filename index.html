@@ -1,22 +1,5 @@
 <!doctype html>
-<html lang="ar" dir="rtl">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="theme-color" content="#2563eb">
-  <title>واصل | دردشة خاصة</title>
-  <link rel="stylesheet" href="style.css">
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-</head>
-<body>
-  <header class="topbar"><div class="brand">واصل <span>Wasel</span></div><div id="identity" class="muted">جارٍ الاتصال…</div></header>
-  <main class="layout">
-    <aside class="panel"><h2>الأشخاص</h2><p class="muted small">اضغط على الحساب لفتح محادثة مباشرة.</p><div id="people" class="people"></div></aside>
-    <section class="maincol">
-      <section class="panel"><h2>منشور جديد</h2><form id="postForm"><textarea id="postText" maxlength="2000" placeholder="ماذا تريد أن تشارك؟"></textarea><div class="formrow"><label class="filelabel">إرفاق صورة <input id="postImage" type="file" accept="image/png,image/jpeg,image/webp"></label><button type="submit">نشر</button></div></form></section>
-      <section class="panel"><h2>آخر المنشورات</h2><div id="feed" class="feed"><p class="muted">جارٍ تحميل المنشورات…</p></div></section>
-    </section>
-    <aside class="panel chatpanel"><h2 id="chatTitle">الرسائل الخاصة</h2><div id="chatLog" class="chatlog"><p class="muted small">اختر حسابًا من القائمة لبدء المحادثة.</p></div><div id="chatTools" class="chattools" hidden><label class="filelabel">📷 صورة <input id="chatImage" type="file" accept="image/*"></label><button id="recordVoice" type="button" class="secondary">🎙 تسجيل صوتي</button></div><form id="messageForm" class="messageform"><input id="messageText" maxlength="2000" placeholder="اكتب رسالة…" autocomplete="off" disabled><button id="sendMessage" type="submit" disabled>إرسال</button></form><p id="callStatus" class="muted small" aria-live="polite"></p></aside>
-  </main>
-  <footer>واصل — الرسائل والصور والرسائل الصوتية تتطلب إعداد Supabase.</footer><script src="app.js"></script>
-</body></html>
+<html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#2563eb"><title>واصل | رسائل خاصة</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet"><link rel="stylesheet" href="style.css"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script></head>
+<body><header class="topbar"><a class="brand" href="./" aria-label="واصل"><span class="brandmark">و</span><span>واصل<small>WASEL MESSENGER</small></span></a><div class="topright"><span class="secure"><i></i> دردشة مباشرة</span><span id="identity" class="identity">جارٍ الاتصال…</span></div></header>
+<main class="app"><aside class="sidebar panel"><div class="sidehead"><div><span class="eyebrow">مساحتك الخاصة</span><h1>المحادثات</h1></div><span class="people-count" id="peopleCount">—</span></div><div class="searchbox"><span>⌕</span><input id="peopleSearch" type="search" placeholder="ابحث عن حساب…" autocomplete="off" aria-label="ابحث عن حساب"></div><div id="people" class="people"><div class="loading">جارٍ العثور على الأشخاص…</div></div><div class="sidefoot"><span class="pulse"></span><span>تظهر الحسابات عند فتحها للتطبيق</span></div></aside>
+<section class="chat panel"><div class="chathead"><div class="chatperson"><div class="avatar large" id="chatAvatar">و</div><div><h2 id="chatTitle">أهلاً بك في واصل</h2><p id="chatSubtitle">اختر شخصًا من القائمة لبدء الدردشة</p></div></div><span class="headbadge">رسائل خاصة</span></div><div id="setupNotice" class="setupnotice" hidden></div><div id="chatLog" class="chatlog"><div class="welcome"><div class="welcomeicon">✉</div><h3>كل المسافة تختصرها رسالة</h3><p>اختر حسابًا من القائمة، وأرسل رسالتك مباشرة.</p></div></div><div id="callStatus" class="statusline" aria-live="polite"></div><div class="composerwrap"><div class="composer-tools"><label class="toolbutton" title="إرسال صورة" aria-label="إرسال صورة">▧<span>صورة</span><input id="chatImage" type="file" accept="image/jpeg,image/png,image/webp,image/gif" disabled></label><span class="composerhint">رسائلك تظهر فور وصولها</span></div><form id="messageForm" class="messageform"><input id="messageText" maxlength="2000" placeholder="اكتب رسالتك هنا…" autocomplete="off" disabled aria-label="نص الرسالة"><button id="sendMessage" type="submit" disabled aria-label="إرسال الرسالة"><span>إرسال</span><b>➤</b></button></form><p class="privacyhint">استخدم الرابط نفسه للتواصل من أي بلد عبر الإنترنت.</p></div></section></main><footer>واصل · دردشة بسيطة، مباشرة، ومن أي مكان.</footer><script src="app.js"></script></body></html>
