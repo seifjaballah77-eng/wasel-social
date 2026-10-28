@@ -13,3 +13,9 @@
 .namecard small{font-size:10px;color:#9aa5b7;text-align:center}
 .nameerror{color:#bd3030!important}
 @media(max-width:480px){.namecard{padding:24px 20px}}
+
+/* Name editing and online-people placeholder */
+.editname{margin:0 17px 12px;padding:9px 12px;border:1px solid #e3e9f5;border-radius:11px;background:#fff;color:#315bd8;font:inherit;font-size:11px;font-weight:700;text-align:right;cursor:pointer}
+.editname:hover{background:#f3f6ff}
+.peoplehint{margin:8px 7px;padding:12px;border-radius:12px;background:#f8faff;color:#8793a8;font-size:10px;line-height:1.8}
+@media(max-width:620px){.editname{margin:0 12px 8px;padding:7px 10px}.peoplehint{min-width:190px;max-width:220px;margin:0 4px;align-self:stretch;display:flex;align-items:center}}
