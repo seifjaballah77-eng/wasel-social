@@ -90,4 +90,4 @@ grant usage on schema public to authenticated;
 grant select, insert, update on public.profiles to authenticated;
 grant select, insert, delete on public.messages to authenticated;
 grant select, insert, delete on public.posts to authenticated;
-\n-- This is an MVP: restrict who can discover profiles before public launch and add abuse controls.
+-- This is an MVP: restrict who can discover profiles before public launch and add abuse controls.
