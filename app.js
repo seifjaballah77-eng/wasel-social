@@ -90,4 +90,32 @@ async function init(){
 $("peopleSearch").addEventListener("input",renderPeople);
 $("messageForm").addEventListener("submit",e=>{e.preventDefault();sendText();});
 $("chatImage").addEventListener("change",async e=>{const f=e.target.files?.[0];if(f)await sendImage(f);e.target.value="";});
-init().catch(e=>{console.error(e);$("identity").textContent="الاتصال غير مكتمل";$("setupNotice").hidden=false;$("setupNotice").textContent="تعذر تشغيل التطبيق: "+e.message+" — راجع إعدادات Supabase وschema.sql.";status("تعذر الاتصال بالخدمة.",true);});
+init().catch(e=>{
+ console.error(e);
+ $("identity").textContent="الاتصال غير مكتمل";
+ const notice=$("setupNotice");
+ notice.hidden=false;
+ notice.replaceChildren();
+ const message=document.createElement("p");
+ message.textContent="تعذر تشغيل واصل: "+e.message;
+ notice.appendChild(message);
+ if(String(e.message).includes("Anonymous sign-ins are disabled")){
+  const help=document.createElement("p");
+  help.textContent="الكود جاهز للدخول بالاسم فقط، لكن Supabase يجب أن يسمح بإنشاء حساب زائر آمن. لا تستخدم سياسات عامة لفتح الرسائل.";
+  notice.appendChild(help);
+  const link=document.createElement("a");
+  link.href="https://supabase.com/dashboard/project/qlcrvffejuscbftjotmp/auth/providers";
+  link.target="_blank";
+  link.rel="noopener noreferrer";
+  link.textContent="فتح إعدادات تسجيل الدخول في Supabase";
+  link.style.cssText="display:inline-block;margin:8px 0;color:#2855dc;font-weight:700";
+  notice.appendChild(link);
+  const retry=document.createElement("button");
+  retry.type="button";
+  retry.textContent="إعادة المحاولة بعد تفعيل الإعداد";
+  retry.style.cssText="display:block;margin-top:8px;border:0;border-radius:10px;padding:10px 14px;background:#315bd8;color:white;font:inherit;cursor:pointer";
+  retry.onclick=()=>window.location.reload();
+  notice.appendChild(retry);
+ }
+ status("تعذر الاتصال بالخدمة.",true);
+});
