@@ -116,7 +116,7 @@ function setupName() {
   $("chatImage").disabled = false;
   $("setupNotice").hidden = false;
   $("setupNotice").textContent = "هذه نسخة شخصية لا تحتاج إلى حساب. الرسائل والصور محفوظة في متصفح هذا الجهاز فقط، وليست متاحة تلقائيًا على أجهزة أخرى.";
-  $("privacyhint").textContent = "نصيحة: لا تمسح بيانات المتصفح إذا أردت الاحتفاظ برسائلك.";
+  document.querySelector(".privacyhint").textContent = "نصيحة: لا تمسح بيانات المتصفح إذا أردت الاحتفاظ برسائلك.";
   const oldOverlay = $("nameSetup");
   oldOverlay.hidden = true;
   renderPeople();
