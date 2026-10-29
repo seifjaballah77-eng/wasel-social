@@ -391,7 +391,7 @@ function enableMobileSwipeNavigation(){let startX=0,startY=0;const chat=$("chatL
 function mobileBack(){document.body.classList.remove("mobile-chat-open");document.querySelectorAll(".navitem").forEach(n=>n.classList.toggle("active",n.dataset.view==="people"));}
 $("mobileBack").addEventListener("click",mobileBack);
 $("statusShortcut").addEventListener("click",()=>status("ميزة الحالات اليومية لم تُفعّل بعد."));
-$("newChatShortcut").addEventListener("click",()=>{$("peopleSearch").focus();$("peopleSearch").scrollIntoView({block:"nearest"});status("ابحث عن اسم صديقك لبدء محادثة جديدة.");});
+$("newChatShortcut").addEventListener("click",()=>{const first=$("people").querySelector(".person");if(first)first.click();else status("لا يوجد أشخاص بعد. اطلب من صديقك فتح الموقع وكتابة اسمه.");});
 $("sidebarMenuButton").addEventListener("click",()=>{const menu=$("sidebarMenu");menu.hidden=!menu.hidden;$("sidebarMenuButton").setAttribute("aria-expanded",String(!menu.hidden));});
 $("sidebarProfile").addEventListener("click",()=>{$("sidebarMenu").hidden=true;openProfile();});
 $("sidebarFavorites").addEventListener("click",()=>{$("sidebarMenu").hidden=true;$("favoritesToggle").click();});
@@ -421,7 +421,7 @@ async function pollIncoming(){
  if(undelivered.length){const now=new Date().toISOString();await api("wasel_chat_messages?id=in.("+undelivered.map(m=>m.id).join(",")+")&recipient_id=eq."+encodeURIComponent(myId)+"&delivered_at=is.null",{method:"PATCH",headers:{"Prefer":"return=minimal"},body:JSON.stringify({delivered_at:now})});}
 }
 async function refresh(){if(polling||!currentName())return;polling=true;try{await savePresence();await loadPeople();await pollIncoming();if(selectedId)await loadMessages();}catch(e){status("قاعدة البيانات تحتاج تحديث schema.sql في Supabase. "+e.message,true);}finally{polling=false;}}
-$("peopleSearch").addEventListener("input",renderPeople);
+$("peopleSearch")?.addEventListener("input",renderPeople);
 $("deleteAccountButton").addEventListener("click",async()=>{
  if(!currentName()){status("لا يوجد حساب نشط لحذفه.",true);return;}
  if(!confirm("هل تريد حذف حسابك «"+currentName()+"» من قائمة الأشخاص؟\n\nسيُحذف ملفك الشخصي من الخادم وإعدادات الهوية من هذا المتصفح. قد تبقى الرسائل القديمة في قاعدة البيانات."))return;
@@ -511,7 +511,9 @@ function setupMobileKeyboard(){
 }
 
 let lastBackgroundSync=Date.now();
-function start(){setupMobileNavigation();setupMobileKeyboard();installPrivacyControls();installOfflineQueue();setupExtras();ensureLocalAccount();setupAutoLock();applyTheme(localStorage.getItem(THEME_KEY)||"blue");applyMode(localStorage.getItem(MODE_KEY)||"light");const name=currentName();$("nameSetup").hidden=Boolean(name);$("identity").textContent=name?"أهلاً، "+name:"لم تختر اسمًا بعد";$("setupNotice").hidden=true;$("setupNotice").textContent=""; $("messageText").disabled=true;$("sendMessage").disabled=true;$("chatImage").disabled=true;renderPeople();if(name)refresh();setInterval(()=>{if(document.visibilityState==="visible"){lastBackgroundSync=Date.now();refresh();}else if(Date.now()-lastBackgroundSync>=3000){lastBackgroundSync=Date.now();refresh();}},3000);}
+function start(){setupMobileNavigation();setupMobileKeyboard();installPrivacyControls();installOfflineQueue();setupExtras();ensureLocalAccount();setupAutoLock();applyTheme(localStorage.getItem(THEME_KEY)||"blue");applyMode("dark");const name=currentName();$("nameSetup").hidden=Boolean(name);$("identity").textContent=name?"أهلاً، "+name:"لم تختر اسمًا بعد";$("setupNotice").hidden=true;$("setupNotice").textContent=""; $("messageText").disabled=true;$("sendMessage").disabled=true;$("chatImage").disabled=true;renderPeople();if(name)refresh();setInterval(()=>{if(document.visibilityState==="visible"){lastBackgroundSync=Date.now();refresh();}else if(Date.now()-lastBackgroundSync>=3000){lastBackgroundSync=Date.now();refresh();}},3000);}
+
+const manualRefreshButton=$("manualRefresh");if(manualRefreshButton&&!manualRefreshButton.dataset.ready){manualRefreshButton.dataset.ready="1";manualRefreshButton.addEventListener("click",async()=>{if(manualRefreshButton.disabled)return;manualRefreshButton.disabled=true;manualRefreshButton.setAttribute("aria-busy","true");manualRefreshButton.title="جارٍ تحديث التطبيق…";try{if("serviceWorker" in navigator){const regs=await navigator.serviceWorker.getRegistrations();await Promise.all(regs.map(reg=>reg.unregister()));}if("caches" in window){const keys=await caches.keys();await Promise.all(keys.map(key=>caches.delete(key)));}}catch(e){}const url=new URL(window.location.href);url.searchParams.set("refresh",String(Date.now()));window.location.replace(url.toString());});}
 start();
 if("serviceWorker"in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(()=>{}));
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&selectedId)loadMessages().catch(()=>{});});
