@@ -250,7 +250,11 @@ function appendFormattedText(root,text){
  const pattern=/\*\*([^*]+)\*\*|\*([^*]+)\*|`([^`]+)`/g;let last=0,match;while((match=pattern.exec(text))){if(match.index>last)root.appendChild(document.createTextNode(text.slice(last,match.index)));const node=document.createElement(match[1]?"strong":match[2]?"em":"code");node.textContent=match[1]||match[2]||match[3];root.appendChild(node);last=pattern.lastIndex;}if(last<text.length)root.appendChild(document.createTextNode(text.slice(last)));
 }
 function renderMessages(){
- const log=$("chatLog");log.replaceChildren();
+ const log=$("chatLog");
+ const wasNearBottom=log.scrollHeight-log.scrollTop-log.clientHeight<72;
+ const previousScrollTop=log.scrollTop;
+ const inputFocused=document.activeElement===$("messageText");
+ log.replaceChildren();
  if(!selectedId){const w=document.createElement("div");w.className="welcome";w.innerHTML='<div class="welcomeicon">'+uiIcon("mail")+'</div><h3>ابدأ محادثتك</h3><p>ابحث عن صديقك واختره من القائمة. يجب أن يفتح هو أيضًا الموقع ويكتب اسمه.</p>';log.appendChild(w);return;}
  if(!messages.length&&!pendingForSelected().length){const w=document.createElement("div");w.className="welcome";w.innerHTML='<div class="welcomeicon">'+uiIcon("mail")+'</div><h3>لا توجد رسائل بعد</h3><p>ابدأ المحادثة برسالة ترسلها لصديقك.</p>';log.appendChild(w);}
  const visibleMessages=messageSearchTerm?messages.filter(m=>(m.body||"").toLocaleLowerCase().includes(messageSearchTerm)):messages;
@@ -290,9 +294,9 @@ function renderMessages(){
   const edit=document.createElement("button");edit.type="button";edit.textContent="تعديل";edit.addEventListener("click",()=>{const value=prompt("عدّل الرسالة قبل إرسالها:",item.body);if(value===null)return;if(!value.trim()){status("اكتب نصًا أو احذف الرسالة المعلّقة.",true);return;}const q=readPendingQueue().map(x=>x.id===item.id?{...x,body:value.trim()}:x);localStorage.setItem(PENDING_QUEUE_KEY,JSON.stringify(q));renderMessages();updateOfflineBanner();});actions.appendChild(edit);
   const remove=document.createElement("button");remove.type="button";remove.textContent="حذف";remove.addEventListener("click",()=>{localStorage.setItem(PENDING_QUEUE_KEY,JSON.stringify(readPendingQueue().filter(x=>x.id!==item.id)));updateOfflineBanner();renderMessages();status("حُذفت الرسالة المعلّقة من هذا الجهاز.");});actions.appendChild(remove);bubble.appendChild(actions);log.appendChild(bubble);
  }
- log.scrollTop=log.scrollHeight;
-}
-async function toggleReaction(m,emoji){const old=m.reactions&&typeof m.reactions==="object"?{...m.reactions}:{};let ids=Array.isArray(old[emoji])?old[emoji].slice():[];ids=ids.includes(myId)?ids.filter(x=>x!==myId):[...ids,myId];if(ids.length)old[emoji]=ids;else delete old[emoji];try{await api("wasel_chat_messages?id=eq."+m.id+"&room_id=eq."+ROOM,{method:"PATCH",headers:{"Prefer":"return=minimal"},body:JSON.stringify({reactions:old})});m.reactions=old;lastSignature="";renderMessages();}catch(e){status("تعذر حفظ التفاعل. تحقق من تشغيل schema.sql.",true);}}
+ if(wasNearBottom&&!inputFocused){log.scrollTop=log.scrollHeight;}else{log.scrollTop=previousScrollTop;}
+ }
+ async function toggleReaction(m,emoji){const old=m.reactions&&typeof m.reactions==="object"?{...m.reactions}:{};let ids=Array.isArray(old[emoji])?old[emoji].slice():[];ids=ids.includes(myId)?ids.filter(x=>x!==myId):[...ids,myId];if(ids.length)old[emoji]=ids;else delete old[emoji];try{await api("wasel_chat_messages?id=eq."+m.id+"&room_id=eq."+ROOM,{method:"PATCH",headers:{"Prefer":"return=minimal"},body:JSON.stringify({reactions:old})});m.reactions=old;lastSignature="";renderMessages();}catch(e){status("تعذر حفظ التفاعل. تحقق من تشغيل schema.sql.",true);}}
 async function editMessage(m){
  const next=prompt("عدّل نص الرسالة:",m.body||"");if(next===null)return;const body=next.trim();if(!body){status("لا يمكن حفظ رسالة فارغة؛ احذفها بدلًا من ذلك.",true);return;}if(body.length>2000){status("الحد الأقصى 2000 حرف.",true);return;}try{await api("wasel_chat_messages?id=eq."+m.id+"&sender_id=eq."+encodeURIComponent(myId),{method:"PATCH",headers:{"Prefer":"return=minimal"},body:JSON.stringify({body})});m.body=body;lastSignature="";status("تم تحديث نص الرسالة.");await loadMessages();}catch(e){status("تعذر تعديل الرسالة؛ تحقق من صلاحيات UPDATE في Supabase. "+e.message,true);}
 }
@@ -506,7 +510,8 @@ function setupMobileKeyboard(){
  window.addEventListener("orientationchange",updateHeight);updateHeight();
 }
 
-function start(){setupMobileNavigation();setupMobileKeyboard();installPrivacyControls();installOfflineQueue();setupExtras();ensureLocalAccount();setupAutoLock();applyTheme(localStorage.getItem(THEME_KEY)||"blue");applyMode(localStorage.getItem(MODE_KEY)||"light");const name=currentName();$("nameSetup").hidden=Boolean(name);$("identity").textContent=name?"أهلاً، "+name:"لم تختر اسمًا بعد";$("setupNotice").hidden=true;$("setupNotice").textContent=""; $("messageText").disabled=true;$("sendMessage").disabled=true;$("chatImage").disabled=true;renderPeople();if(name)refresh();setInterval(refresh,5000);}
+let lastBackgroundSync=Date.now();
+function start(){setupMobileNavigation();setupMobileKeyboard();installPrivacyControls();installOfflineQueue();setupExtras();ensureLocalAccount();setupAutoLock();applyTheme(localStorage.getItem(THEME_KEY)||"blue");applyMode(localStorage.getItem(MODE_KEY)||"light");const name=currentName();$("nameSetup").hidden=Boolean(name);$("identity").textContent=name?"أهلاً، "+name:"لم تختر اسمًا بعد";$("setupNotice").hidden=true;$("setupNotice").textContent=""; $("messageText").disabled=true;$("sendMessage").disabled=true;$("chatImage").disabled=true;renderPeople();if(name)refresh();setInterval(()=>{if(document.visibilityState==="visible"){refresh();}else if(Date.now()-lastBackgroundSync>=180000){lastBackgroundSync=Date.now();refresh();}},5000);}
 start();
 if("serviceWorker"in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(()=>{}));
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&selectedId)loadMessages().catch(()=>{});});
