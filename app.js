@@ -73,6 +73,8 @@ function renderPeople(){
 }
 async function selectPerson(id){
   selectedId=id;
+  document.body.classList.add("mobile-chat-open");
+  document.querySelectorAll(".navitem").forEach(n=>n.classList.toggle("active",n.dataset.view==="chats"));
   const p=people.find(x=>x.user_id===id);
   $("chatTitle").textContent=p ? (p.user_id===myId ? "ملاحظاتي" : p.display_name) : "المحادثة";
   $("chatSubtitle").textContent=p ? (Date.now()-new Date(p.last_seen).getTime()<90000?"متصل الآن":"آخر ظهور: "+timeLabel(p.last_seen)) : "";
@@ -135,6 +137,18 @@ async function sendImage(file){
   };
   reader.onerror=()=>status("تعذر قراءة الصورة.",true);reader.readAsDataURL(file);
 }
+function mobileBack(){document.body.classList.remove("mobile-chat-open");document.querySelectorAll(".navitem").forEach(n=>n.classList.toggle("active",n.dataset.view==="people"));}
+$("mobileBack").addEventListener("click",mobileBack);
+document.querySelectorAll(".navitem").forEach(button=>button.addEventListener("click",()=>{
+  const view=button.dataset.view;
+  document.querySelectorAll(".navitem").forEach(n=>n.classList.toggle("active",n===button));
+  if(view==="settings"){openNameSetup();return;}
+  if(view==="people"||view==="chats"){
+    document.body.classList.remove("mobile-chat-open");
+    if(view==="chats"){$("peopleSearch").value="";renderPeople();}
+    else $("peopleSearch").focus({preventScroll:true});
+  }
+}));
 function openNameSetup(){
   $("displayNameInput").value=currentName();$("nameSetupError").hidden=true;$("nameSetup").hidden=false;$("displayNameInput").focus();
 }
@@ -172,3 +186,6 @@ async function start(){
   setInterval(refresh,5000);
 }
 start();
+
+// Installable PWA support (GitHub Pages HTTPS).
+if ("serviceWorker" in navigator) window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(()=>{}));
