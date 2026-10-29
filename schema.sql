@@ -83,6 +83,7 @@ create policy "chat participants upload own media" on storage.objects for insert
 -- Chat media is private: only the uploader and the participants in the
 -- message that references the file may read it. Do not grant bucket-wide reads.
 drop policy if exists "authenticated users read chat media" on storage.objects;
+drop policy if exists "chat participants read own media" on storage.objects;
 create policy "chat participants read own media" on storage.objects
 for select to authenticated
 using (
