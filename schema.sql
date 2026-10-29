@@ -182,7 +182,12 @@ alter table public.wasel_chat_messages add column if not exists view_once boolea
 alter table public.wasel_chat_messages add column if not exists viewed_at timestamptz;
 create index if not exists wasel_chat_messages_view_once_idx on public.wasel_chat_messages(id) where view_once = true;
 
--- Compatibility migration for current Seif Messages client (safe to re-run).\nalter table public.wasel_chat_messages add column if not exists audio_data text;\n
+-- Compatibility migration for current Seif Messages client (safe to re-run).
+alter table public.wasel_chat_messages add column if not exists audio_data text;
+alter table public.wasel_chat_messages drop constraint if exists wasel_chat_messages_check;
+alter table public.wasel_chat_messages drop constraint if exists wasel_chat_messages_content_check;
+alter table public.wasel_chat_messages add constraint wasel_chat_messages_content_check check (char_length(body) > 0 or image_data is not null or audio_data is not null);
+
 alter table public.wasel_chat_messages add column if not exists view_once boolean not null default false;
 alter table public.wasel_chat_messages add column if not exists viewed_at timestamptz;
 alter table public.wasel_chat_messages add column if not exists read_at timestamptz;
