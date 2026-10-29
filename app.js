@@ -309,6 +309,26 @@ async function pollIncoming(){
 }
 async function refresh(){if(polling||!currentName())return;polling=true;try{await savePresence();await loadPeople();await pollIncoming();if(selectedId)await loadMessages();status("متصل بالخدمة · تحديث تلقائي.");}catch(e){status("قاعدة البيانات تحتاج تحديث schema.sql في Supabase. "+e.message,true);}finally{polling=false;}}
 $("peopleSearch").addEventListener("input",renderPeople);
+$("deleteAccountButton").addEventListener("click",async()=>{
+ if(!currentName()){status("لا يوجد حساب نشط لحذفه.",true);return;}
+ if(!confirm("هل تريد حذف حسابك «"+currentName()+"» من قائمة الأشخاص؟\n\nسيُحذف ملفك الشخصي من الخادم وإعدادات الهوية من هذا المتصفح. قد تبقى الرسائل القديمة في قاعدة البيانات."))return;
+ const typed=prompt("للتأكيد النهائي، اكتب كلمة حذف:");
+ if(typed!=="حذف"){status("تم إلغاء حذف الحساب.");return;}
+ const button=$("deleteAccountButton");button.disabled=true;button.textContent="جارٍ الحذف…";
+ try{
+  await api("wasel_chat_people?user_id=eq."+encodeURIComponent(myId)+"&room_id=eq."+encodeURIComponent(ROOM),{method:"DELETE",headers:{"Prefer":"return=minimal"}});
+  const accounts=JSON.parse(localStorage.getItem(ACCOUNTS_KEY)||"[]").filter(a=>a.id!==myId);
+  localStorage.setItem(ACCOUNTS_KEY,JSON.stringify(accounts));
+  [PROFILE_KEY,ID_KEY,PHOTO_KEY,BIO_KEY,SELECTED_KEY].forEach(key=>localStorage.removeItem(key));
+  $("profileModal").hidden=true;
+  alert("تم حذف ملف الحساب من قائمة الأشخاص. ستعود إلى شاشة إدخال الاسم.");
+  location.reload();
+ }catch(e){
+  button.disabled=false;button.textContent="حذف الحساب";
+  $("profileError").textContent="تعذر حذف الحساب من الخادم: "+e.message+" — تحقق من تحديث schema.sql في Supabase.";
+  $("profileError").hidden=false;
+ }
+});
 $("profileForm").addEventListener("submit",async event=>{event.preventDefault();const name=$("profileNameInput").value.trim();if(name.length<2){$("profileError").textContent="اكتب اسمًا من حرفين على الأقل.";$("profileError").hidden=false;return;}const changed=name!==currentName();localStorage.setItem(PROFILE_KEY,name.slice(0,30));localStorage.setItem(BIO_KEY,$("profileBioInput").value.trim().slice(0,120));localStorage.setItem(SOUND_KEY,$("soundSetting").checked?"on":"off");if($("notifySetting").checked){await enableNotifications();}else{localStorage.setItem(NOTIFY_KEY,"off");}applyTheme($("themeSelect").value);$("identity").textContent="أهلاً، "+name;$("profileModal").hidden=true;try{await savePresence();await loadPeople();}catch(e){status("حُفظت التعديلات محليًا لكن تعذر تحديث الملف على الخادم: "+e.message,true);}if(changed&&selectedId){const p=people.find(x=>x.user_id===selectedId);if(p)$("chatTitle").textContent=p.display_name;}renderPeople();});
 $("nameSetupForm").addEventListener("submit",async event=>{event.preventDefault();const name=$("displayNameInput").value.trim();if(name.length<2){$("nameSetupError").textContent="اكتب اسمًا من حرفين على الأقل.";$("nameSetupError").hidden=false;return;}localStorage.setItem(PROFILE_KEY,name.slice(0,30));$("nameSetup").hidden=true;$("identity").textContent="أهلاً، "+name;$("messageText").disabled=true;$("sendMessage").disabled=true;$("chatImage").disabled=true;$("setupNotice").hidden=false;$("setupNotice").textContent="اختر اسم صديقك من القائمة. يجب أن يفتح صديقك الموقع ويكتب اسمه أيضًا.";selectedId=null;lastSignature="";renderMessages();renderPeople();await refresh();});
 
