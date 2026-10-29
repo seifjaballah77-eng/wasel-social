@@ -562,5 +562,40 @@ document.addEventListener("keydown",function(event){
  $("imageViewerImage")?.removeAttribute("src");
 });
 start();
-if("serviceWorker"in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(()=>{}));
+
+// Detect a newly published version and let the user reload when ready.
+(function setupUpdatePrompt(){
+ const notice=$("updateNotice"),reload=$("reloadForUpdate"),dismiss=$("dismissUpdate");
+ if(!("serviceWorker" in navigator)||!notice||!reload)return;
+ let waitingWorker=null;
+ const showNotice=()=>{notice.hidden=false;};
+ const checkRegistration=reg=>{
+  if(reg.waiting&&navigator.serviceWorker.controller){waitingWorker=reg.waiting;showNotice();}
+  reg.addEventListener("updatefound",()=>{
+   const worker=reg.installing;
+   if(!worker)return;
+   worker.addEventListener("statechange",()=>{
+    if(worker.state==="installed"&&navigator.serviceWorker.controller){waitingWorker=worker;showNotice();}
+   });
+  });
+ };
+ window.addEventListener("load",async()=>{
+  try{
+   const reg=await navigator.serviceWorker.register("./sw.js",{updateViaCache:"none"});
+   checkRegistration(reg);
+   try{await reg.update();}catch(_){}
+   window.setInterval(()=>{if(document.visibilityState==="visible")reg.update().catch(()=>{});},60000);
+  }catch(_){}
+ });
+ navigator.serviceWorker.addEventListener("controllerchange",()=>{
+  if(!sessionStorage.getItem("seif-update-reload-once"))showNotice();
+ });
+ reload.addEventListener("click",()=>{
+  try{sessionStorage.setItem("seif-update-reload-once","1");}catch(_){}
+  window.location.reload();
+ });
+ dismiss?.addEventListener("click",()=>{notice.hidden=true;});
+ try{if(sessionStorage.getItem("seif-update-reload-once"))sessionStorage.removeItem("seif-update-reload-once");}catch(_){}
+})();
+
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&selectedId)loadMessages().catch(()=>{});});
