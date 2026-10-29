@@ -673,3 +673,24 @@ button .ui-icon,.attach-option .ui-icon,.searchbox .ui-icon{pointer-events:none}
     display: none !important;
   }
 }
+
+
+/* Compact inline neon composer: attachment, emoji, message, send */
+@media (max-width: 620px) {
+  .composer-tools { display: none !important; }
+  .composerwrap { position: relative; padding: 8px 9px calc(8px + env(safe-area-inset-bottom)) !important; border-top: 0; background: transparent; }
+  .messageform { display: flex !important; flex-direction: row; align-items: center; gap: 3px !important; min-height: 48px; padding: 4px 5px; border: 1px solid rgba(0,255,170,.52); border-radius: 25px; background: rgba(7,17,31,.94); box-shadow: 0 0 12px rgba(0,255,170,.11), inset 0 0 12px rgba(0,255,170,.035); }
+  .messageform #attachmentToggle, .messageform #emojiPicker { order: 0; flex: 0 0 34px; width: 34px; min-width: 34px; height: 36px; min-height: 36px; display: inline-flex; align-items: center; justify-content: center; padding: 0; margin: 0; border: 0; border-radius: 50%; color: #75f5d0; background: transparent; box-shadow: none; font-size: 0; cursor: pointer; transition: color .16s ease, background .16s ease, box-shadow .16s ease, transform .16s ease; }
+  .messageform #attachmentToggle .ui-icon, .messageform #emojiPicker .ui-icon { width: 21px; height: 21px; }
+  .messageform #attachmentToggle:active, .messageform #emojiPicker:active, .messageform #attachmentToggle.is-active, .messageform #emojiPicker.is-active { color: #00ffaa; background: rgba(0,255,170,.13); box-shadow: 0 0 0 1px rgba(0,255,170,.25), 0 0 13px rgba(0,255,170,.28); transform: scale(.94); }
+  .messageform #messageText { order: 1; flex: 1 1 auto; width: 0; min-width: 0; min-height: 38px; height: 38px; margin: 0; padding: 7px; border: 0 !important; border-radius: 18px; outline: 0; color: #e7fff8; background: transparent !important; box-shadow: none !important; font-size: 14px; }
+  .messageform #messageText::placeholder { color: #8ca9a5; opacity: 1; }
+  .messageform #messageText:focus { border: 0 !important; box-shadow: none !important; }
+  .messageform #sendMessage { order: 2; flex: 0 0 38px; width: 38px; min-width: 38px; height: 38px; min-height: 38px; margin: 0; padding: 0; display: inline-flex; align-items: center; justify-content: center; border: 1px solid rgba(0,255,170,.58); border-radius: 50%; color: #001b14; background: #00ffaa; box-shadow: 0 0 11px rgba(0,255,170,.24); }
+  .messageform #sendMessage:not(.has-text) { color: #7fffe0; background: rgba(0,255,170,.08); border-color: rgba(0,255,170,.42); box-shadow: none; }
+  .messageform #sendMessage:active { box-shadow: 0 0 14px rgba(0,255,170,.35); transform: scale(.96); }
+  .messageform #sendIcon, .messageform #sendIcon .ui-icon { display: grid; place-items: center; width: 20px; height: 20px; }
+  .composerwrap .privacyhint { display: none !important; }
+  .attachment-menu { position: absolute; z-index: 40; right: 10px; bottom: calc(100% - 4px); max-width: min(340px, calc(100vw - 20px)); border: 1px solid rgba(0,255,170,.3); border-radius: 18px; background: rgba(8,17,30,.97); box-shadow: 0 12px 34px rgba(0,0,0,.32), 0 0 15px rgba(0,255,170,.08); backdrop-filter: blur(16px); }
+  .emoji-panel { position: absolute !important; z-index: 45; left: 8px; right: 8px; bottom: calc(100% + 4px); width: auto !important; max-width: none !important; margin: 0 !important; border: 1px solid rgba(0,255,170,.3) !important; border-radius: 18px !important; background: rgba(8,17,30,.98) !important; box-shadow: 0 12px 34px rgba(0,0,0,.34), 0 0 16px rgba(0,255,170,.09) !important; backdrop-filter: blur(16px); }
+}
