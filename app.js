@@ -40,7 +40,8 @@ function notifyIncoming(m){playSound();if(localStorage.getItem(NOTIFY_KEY)==="on
 async function savePhoto(file){if(!["image/jpeg","image/png","image/webp"].includes(file.type)||file.size>100*1024){status("اختر صورة JPG أو PNG أو WEBP بحجم لا يتجاوز 100KB.",true);return;}const reader=new FileReader();reader.onload=async()=>{const photo=String(reader.result);localStorage.setItem(PHOTO_KEY,photo);try{await api("wasel_chat_people?user_id=eq."+encodeURIComponent(myId),{method:"PATCH",headers:{"Prefer":"return=minimal"},body:JSON.stringify({avatar_data:photo})});renderPeople();$("chatAvatar").textContent=initials(currentName());status("تم حفظ صورتك في هذا المتصفح وقائمة الأشخاص.");}catch(e){status("حُفظت الصورة محليًا، لكن قاعدة البيانات تحتاج تحديث schema.sql: "+e.message,true);}};reader.readAsDataURL(file);}
 async function savePresence(){
  if(!currentName())return;
- await api("wasel_chat_people?on_conflict=user_id",{method:"POST",headers:{"Prefer":"resolution=merge-duplicates,return=minimal"},body:JSON.stringify({user_id:myId,display_name:currentName(),room_id:ROOM,last_seen:new Date().toISOString(),avatar_data:currentPhoto()||null})});
+ const presence={user_id:myId,display_name:currentName(),room_id:ROOM,last_seen:new Date().toISOString()};if(currentPhoto())presence.avatar_data=currentPhoto();
+ await api("wasel_chat_people?on_conflict=user_id",{method:"POST",headers:{"Prefer":"resolution=merge-duplicates,return=minimal"},body:JSON.stringify(presence)});
 }
 async function loadPeople(){
  people=await api("wasel_chat_people?select=user_id,display_name,last_seen,room_id,avatar_data,is_typing,typing_to&room_id=eq."+ROOM+"&order=last_seen.desc&limit=300");
@@ -119,7 +120,16 @@ function mobileBack(){document.body.classList.remove("mobile-chat-open");documen
 $("mobileBack").addEventListener("click",mobileBack);
 document.querySelectorAll(".navitem").forEach(b=>b.addEventListener("click",()=>{const v=b.dataset.view;document.querySelectorAll(".navitem").forEach(n=>n.classList.toggle("active",n===b));if(v==="settings"){openNameSetup();return;}if(v==="people"||v==="chats"){document.body.classList.remove("mobile-chat-open");if(v==="chats"){$("peopleSearch").value="";renderPeople();}else $("peopleSearch").focus({preventScroll:true});}}));
 function openNameSetup(){$("displayNameInput").value=currentName();$("nameSetupError").hidden=true;$("nameSetup").hidden=false;$("displayNameInput").focus();}
-async function refresh(){if(polling||!currentName())return;polling=true;try{await savePresence();await loadPeople();if(selectedId)await loadMessages();status("متصل بالخدمة · تحديث تلقائي.");}catch(e){status("قاعدة البيانات تحتاج تحديث schema.sql في Supabase. "+e.message,true);}finally{polling=false;}}
+let incomingInitialized=false;
+async function pollIncoming(){
+ const rows=await api("wasel_chat_messages?select=id,sender_id,sender_name,body,image_data,created_at,delivered_at&recipient_id=eq."+encodeURIComponent(myId)+"&room_id=eq."+ROOM+"&order=created_at.desc&limit=100");
+ const newRows=rows.filter(m=>m.sender_id!==myId&&!notifiedIds.has(String(m.id)));
+ if(!incomingInitialized){newRows.forEach(m=>notifiedIds.add(String(m.id)));incomingInitialized=true;}
+ else newRows.forEach(m=>{notifiedIds.add(String(m.id));notifyIncoming(m);});
+ const undelivered=rows.filter(m=>!m.delivered_at&&m.sender_id!==myId);
+ if(undelivered.length){const now=new Date().toISOString();await api("wasel_chat_messages?id=in.("+undelivered.map(m=>m.id).join(",")+")&recipient_id=eq."+encodeURIComponent(myId)+"&delivered_at=is.null",{method:"PATCH",headers:{"Prefer":"return=minimal"},body:JSON.stringify({delivered_at:now})});}
+}
+async function refresh(){if(polling||!currentName())return;polling=true;try{await savePresence();await loadPeople();await pollIncoming();if(selectedId)await loadMessages();status("متصل بالخدمة · تحديث تلقائي.");}catch(e){status("قاعدة البيانات تحتاج تحديث schema.sql في Supabase. "+e.message,true);}finally{polling=false;}}
 $("peopleSearch").addEventListener("input",renderPeople);$("editName").addEventListener("click",openNameSetup);
 $("nameSetupForm").addEventListener("submit",async event=>{event.preventDefault();const name=$("displayNameInput").value.trim();if(name.length<2){$("nameSetupError").textContent="اكتب اسمًا من حرفين على الأقل.";$("nameSetupError").hidden=false;return;}localStorage.setItem(PROFILE_KEY,name.slice(0,30));$("nameSetup").hidden=true;$("identity").textContent="أهلاً، "+name;$("messageText").disabled=true;$("sendMessage").disabled=true;$("chatImage").disabled=true;$("setupNotice").hidden=false;$("setupNotice").textContent="اختر اسم صديقك من القائمة. يجب أن يفتح صديقك الموقع ويكتب اسمه أيضًا.";selectedId=null;lastSignature="";renderMessages();renderPeople();await refresh();});
 $("messageForm").addEventListener("submit",e=>{e.preventDefault();sendText();});
