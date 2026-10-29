@@ -174,3 +174,22 @@ body{min-width:320px;overflow-x:hidden}
   .messageform button{padding-inline:11px}
 }
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;transition-duration:.01ms!important}}
+
+/* WhatsApp-like message tools, unread badges and profile avatars */
+.avatar img{width:100%;height:100%;object-fit:cover;border-radius:inherit}
+.unread-badge{margin-inline-start:auto;min-width:22px;height:22px;padding:0 6px;display:grid;place-items:center;border-radius:999px;background:#39f5ff;color:#07101b;font-size:11px;font-weight:800;box-shadow:0 0 12px #39f5ff55}
+.extra-tool{cursor:pointer;font-size:11px;white-space:nowrap}
+.composer-tools{flex-wrap:wrap}
+.emoji-panel{display:flex;flex-wrap:wrap;gap:5px;padding:8px 10px;background:#0b1428;border:1px solid #39f5ff33;border-radius:12px}
+.emoji-panel button{border:0;border-radius:8px;background:#16223a;padding:6px;font-size:19px;cursor:pointer}
+.reply-preview{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 8px;padding:7px 10px;border-inline-start:3px solid #39f5ff;background:#0c1b30;color:#bdefff;border-radius:8px;font-size:11px}
+.reply-preview[hidden]{display:none}
+.reply-preview button{border:0;background:transparent;color:#fff;font-size:20px;cursor:pointer}
+.message-actions{display:flex;gap:5px;justify-content:flex-start;opacity:.78;margin-top:5px}
+.message-actions button,.reaction-chip{border:1px solid #39f5ff24;background:#071424;color:#aeefff;border-radius:8px;padding:3px 7px;font-size:10px;cursor:pointer}
+.message-actions button:hover,.reaction-chip:hover{border-color:#39f5ff;opacity:1}
+.reaction-row{display:flex;gap:4px;flex-wrap:wrap;margin-top:4px}
+.quoted-message{border-inline-start:3px solid #bd5cff;padding:4px 8px;margin-bottom:7px;background:#080f20aa;color:#c5d7ee;border-radius:5px;font-size:11px;max-width:100%;overflow-wrap:anywhere}
+.deleted-text{font-style:italic;opacity:.7}
+.bubble.deleted{opacity:.8}
+@media(max-width:620px){.composer-tools{gap:6px}.extra-tool{min-height:35px;padding:6px 8px}.message-actions{opacity:1}.message-actions button{padding:5px 8px;min-height:28px}.unread-badge{min-width:24px;height:24px}}
