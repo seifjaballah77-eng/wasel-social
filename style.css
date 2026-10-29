@@ -244,3 +244,14 @@ body{min-width:320px;overflow-x:hidden}
 :root[data-theme="green"] .person.active{background:#eafff6;border-color:#c7f5e4}
 :root[data-theme="green"] .bubble.mine{background:linear-gradient(135deg,#19b981,#087f68)}
 @media(max-width:620px){.side-actions{padding-bottom:8px}.modal-card{padding:24px 20px}.composerhint{font-size:9px}.messageform button{min-width:74px;padding:11px}.attach-button{padding:8px 10px}}
+
+.chat-options{display:flex;align-items:center;gap:8px}
+.chat-bg-label{display:flex;align-items:center;gap:5px;color:#8793a8;font-size:10px}
+.chat-bg-label select{max-width:90px;border:1px solid #e6ebf4;border-radius:8px;padding:6px;background:#fff;color:#5d6b82;font:inherit}
+.chat-mute{border:1px solid #e6ebf4;background:#fff;border-radius:9px;padding:7px 9px;color:#66738a;font:inherit;font-size:10px;cursor:pointer}
+#chatLog[data-background="blue"]{background:linear-gradient(145deg,#eef5ff,#f9fbff)}
+#chatLog[data-background="purple"]{background:linear-gradient(145deg,#f8f0ff,#fffaff)}
+#chatLog[data-background="green"]{background:linear-gradient(145deg,#effcf6,#fbfffd)}
+.pinned-label{display:block;margin:0 0 6px;font-size:9px;opacity:.8}
+@media(max-width:850px){.chat-options{gap:5px}.chat-bg-label{font-size:9px}.chat-bg-label select{max-width:76px}.chat-mute{padding:6px;font-size:9px}}
+@media(max-width:620px){.chat-options{max-width:45%;flex-wrap:wrap;justify-content:flex-end}.chat-mute{font-size:9px}.chat-bg-label select{max-width:68px}}
