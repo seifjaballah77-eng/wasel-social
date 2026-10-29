@@ -818,3 +818,9 @@ body.mobile-chat-open .topbar .profile-open {
 .refresh-page-button{width:36px;height:36px;flex:0 0 36px;border-radius:12px;background:#0c1728;border-color:#24405d;color:#8deaff}
 .refresh-page-button:active{transform:rotate(-25deg);box-shadow:0 0 16px #42dfff55}
 #identity{display:none!important}
+
+/* Notification control beside hard refresh */
+.sidebar-primary-actions{display:flex;align-items:center;gap:6px;flex:0 0 auto}
+.notifications-button{width:36px;height:36px;flex:0 0 36px;border-radius:12px;background:#0c1728;border-color:#24405d;color:#9eb5d5}
+.notifications-button.is-enabled{color:#75ffbd;border-color:#167b5a;background:#06251d;box-shadow:0 0 12px #00ffaa20}
+.notifications-button:focus-visible,.refresh-page-button:focus-visible{outline:2px solid #58e8ff;outline-offset:2px}
