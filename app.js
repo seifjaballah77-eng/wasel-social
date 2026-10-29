@@ -89,9 +89,22 @@ async function selectPerson(id){
 }
 async function loadMessages(){
   if(!selectedId) return;
-  const rows=await api("wasel_chat_messages?select=id,room_id,sender_id,sender_name,recipient_id,body,image_data,created_at&room_id=eq."+ROOM+"&order=created_at.asc&limit=300");
+  const rows=await api("wasel_chat_messages?select=id,room_id,sender_id,sender_name,recipient_id,body,image_data,created_at,read_at&room_id=eq."+ROOM+"&order=created_at.asc&limit=300");
   messages=rows.filter(m=>(m.sender_id===myId&&m.recipient_id===selectedId)||(m.sender_id===selectedId&&m.recipient_id===myId));
-  const signature=messages.map(m=>m.id).join(",");
+  if(document.visibilityState==="visible"){
+    const unread=messages.filter(m=>m.sender_id===selectedId&&m.recipient_id===myId&&!m.read_at);
+    if(unread.length){
+      try{
+        await api("wasel_chat_messages?id=in.("+unread.map(m=>m.id).join(",")+")&recipient_id=eq."+encodeURIComponent(myId)+"&read_at=is.null",{
+          method:"PATCH",headers:{"Prefer":"return=minimal"},body:JSON.stringify({read_at:new Date().toISOString()})
+        });
+        const readAt=new Date().toISOString();
+        const ids=new Set(unread.map(m=>String(m.id)));
+        messages=messages.map(m=>ids.has(String(m.id))?{...m,read_at:readAt}:m);
+      }catch(e){console.warn("Read receipts could not be updated",e);}
+    }
+  }
+  const signature=messages.map(m=>m.id+":"+(m.read_at||"")).join(",");
   if(signature!==lastMessageIds){lastMessageIds=signature;renderMessages();}
 }
 function renderMessages(){
@@ -110,7 +123,15 @@ function renderMessages(){
     const bubble=document.createElement("div");bubble.className="bubble "+(m.sender_id===myId?"mine":"");
     if(m.image_data){const img=document.createElement("img");img.alt="صورة مرسلة";img.loading="lazy";img.src=m.image_data;img.style.maxWidth="100%";img.style.borderRadius="12px";bubble.appendChild(img);}
     if(m.body){const body=document.createElement("div");body.textContent=m.body;bubble.appendChild(body);}
-    const stamp=document.createElement("span");stamp.className="stamp";stamp.textContent=(m.sender_id===myId?"أنت":"صديقك")+" · "+timeLabel(m.created_at);bubble.appendChild(stamp);
+    const stamp=document.createElement("span");stamp.className="stamp";stamp.textContent=(m.sender_id===myId?"أنت":"صديقك")+" · "+timeLabel(m.created_at);
+    if(m.sender_id===myId){
+      const receipt=document.createElement("span");
+      receipt.className="read-receipt"+(m.read_at?" is-read":"");
+      receipt.textContent=m.read_at?" ✓✓":" ✓";
+      receipt.setAttribute("aria-label",m.read_at?"تمت القراءة":"تم الإرسال");
+      stamp.appendChild(receipt);
+    }
+    bubble.appendChild(stamp);
     log.appendChild(bubble);
   }
   log.scrollTop=log.scrollHeight;
@@ -189,3 +210,4 @@ start();
 
 // Installable PWA support (GitHub Pages HTTPS).
 if ("serviceWorker" in navigator) window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(()=>{}));
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&selectedId)loadMessages().catch(()=>{});});
