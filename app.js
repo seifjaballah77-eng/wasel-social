@@ -3,7 +3,7 @@
 const $ = id => document.getElementById(id);
 const SUPABASE_URL = "https://qlcrvffejuscbftjotmp.supabase.co";
 const SUPABASE_KEY = "sb_publishable_nY14ZzU_YiOfBrySQlBuFA_G-jg2VOc";
-const ROOM = "wasel-friends", PROFILE_KEY = "wasel-personal-name-v1", ID_KEY = "wasel-chat-user-id-v1";
+const ROOM = "wasel-friends", DOTS_ACCOUNT_ID="35c867e6-c445-4ae0-823a-c2cb474e3e7e", SEIF_ARABIC_ID="0d8637da-ad98-4b30-96a4-b6e0cd547c1b", ROUA_ID="846863e1-2e1d-48e8-82da-3860cbe83df3", PROFILE_KEY = "wasel-personal-name-v1", ID_KEY = "wasel-chat-user-id-v1";
 const PHOTO_KEY = "wasel-chat-photo-v1", SOUND_KEY = "wasel-chat-sound-v1", NOTIFY_KEY = "wasel-chat-notify-v1", BIO_KEY = "wasel-chat-bio-v1", FAVORITES_KEY = "wasel-chat-favorites-v1", THEME_KEY = "wasel-chat-theme-v1", PIN_KEY = "wasel-chat-pins-v1", BG_KEY = "wasel-chat-backgrounds-v1", MUTE_KEY = "wasel-chat-muted-v1", MODE_KEY = "wasel-chat-mode-v1", SELECTED_KEY = "wasel-chat-selected-v1", CHAT_LOCKS_KEY="seif-chat-locks-v1", AUTO_LOCK_KEY="seif-auto-lock-minutes-v1", MASTER_PIN_KEY="seif-app-lock-pin-v1", GHOST_KEY="seif-ghost-mode-v1", ACCOUNTS_KEY="seif-local-accounts-v1", PENDING_QUEUE_KEY="seif-pending-messages-v1";
 const API = SUPABASE_URL + "/rest/v1/";
 let myId = localStorage.getItem(ID_KEY) || crypto.randomUUID();
@@ -12,6 +12,8 @@ let lastMessagesByUser={},people=[],selectedId=localStorage.getItem(SELECTED_KEY
 const headers={"apikey":SUPABASE_KEY,"Authorization":"Bearer "+SUPABASE_KEY,"Content-Type":"application/json"};
 function status(text,error=false){$("callStatus").textContent=text;$("callStatus").className="statusline"+(error?" error":"");}
 function currentName(){return localStorage.getItem(PROFILE_KEY)||"";}
+function canContact(id){return !((myId===DOTS_ACCOUNT_ID&&id===ROUA_ID)||(myId===ROUA_ID&&id===DOTS_ACCOUNT_ID));}
+function contactRestrictionNotice(){status("تم حظر التواصل بين هذا الحساب وحساب roua في هذه الواجهة. يلزم أيضًا تفعيل قيد قاعدة البيانات.",true);}
 function currentPhoto(){return localStorage.getItem(PHOTO_KEY)||"";}
 function initials(name){return (name||"").trim().charAt(0)||"؟";}
 function timeLabel(value){return new Date(value).toLocaleTimeString("ar-TN",{hour:"2-digit",minute:"2-digit"});}
@@ -88,6 +90,7 @@ function loadJitsiScript(){
  return callScriptPromise;
 }
 async function startCall(kind,isIncoming=false){
+ if(selectedId&&!canContact(selectedId)){contactRestrictionNotice();return;}
  if(!selectedId||selectedId===myId){status("اختر صديقًا من قائمة الأشخاص أولًا.",true);return;}
  const person=people.find(p=>p.user_id===selectedId);if(!person){status("لم يتم العثور على جهة الاتصال. حدّث قائمة الأشخاص أولًا.",true);return;}
  if(activeCallApi||activeCallInfo){status("هناك مكالمة جارية بالفعل.",true);return;}
@@ -200,7 +203,7 @@ async function savePresence(){
  await api("wasel_chat_people?on_conflict=user_id",{method:"POST",headers:{"Prefer":"resolution=merge-duplicates,return=minimal"},body:JSON.stringify(presence)});
 }
 async function loadPeople(){
- people=await api("wasel_chat_people?select=user_id,display_name,last_seen,room_id,avatar_data,is_typing,typing_to&room_id=eq."+ROOM+"&order=last_seen.desc&limit=300");
+ people=await api("wasel_chat_people?select=user_id,display_name,last_seen,room_id,avatar_data,is_typing,typing_to&room_id=eq."+ROOM+"&order=last_seen.desc&limit=300");if(myId===DOTS_ACCOUNT_ID||myId===ROUA_ID)people=people.filter(p=>!((myId===DOTS_ACCOUNT_ID&&p.user_id===ROUA_ID)||(myId===ROUA_ID&&p.user_id===DOTS_ACCOUNT_ID)));
  try{const recent=await api("wasel_chat_messages?select=id,sender_id,recipient_id,body,image_data,created_at,read_at,delivered_at,deleted_at,room_id&room_id=eq."+ROOM+"&order=created_at.desc&limit=1000");lastMessagesByUser={};for(const m of recent){const other=m.sender_id===myId?m.recipient_id:m.sender_id;if(!other||other===myId||lastMessagesByUser[other])continue;lastMessagesByUser[other]=m;}}catch(e){console.warn("Last-message previews unavailable",e);lastMessagesByUser={};}
  const unread=await api("wasel_chat_messages?select=id,sender_id&recipient_id=eq."+encodeURIComponent(myId)+"&read_at=is.null&deleted_at=is.null&room_id=eq."+ROOM+"&limit=1000");
  unreadCounts={};for(const m of unread)unreadCounts[m.sender_id]=(unreadCounts[m.sender_id]||0)+1;
@@ -226,6 +229,7 @@ function renderPeople(){
  }
 }
 async function selectPerson(id){
+ if(!canContact(id)){contactRestrictionNotice();return;}
  if(id!==myId&&!await unlockChatIfNeeded(id))return;selectedId=id;localStorage.setItem(SELECTED_KEY,id);document.body.classList.add("mobile-chat-open");document.querySelectorAll(".navitem").forEach(n=>n.classList.toggle("active",n.dataset.view==="people"));
  const p=people.find(x=>x.user_id===id);$("chatTitle").textContent=p?(id===myId?"ملاحظاتي":p.display_name):"المحادثة";$("chatSubtitle").textContent=p?(id!==myId&&p.is_typing&&p.typing_to===myId?"يكتب الآن…":Date.now()-new Date(p.last_seen).getTime()<90000?"متصل الآن":"آخر ظهور: "+timeLabel(p.last_seen)):"";
  applyChatBackground();const muteMap=JSON.parse(localStorage.getItem(MUTE_KEY)||"{}");$("muteChat").textContent=muteMap[id]?uiIcon("bellOff")+" إلغاء كتم المحادثة":uiIcon("bell")+" كتم المحادثة";$("chatAvatar").replaceChildren();if(p?.avatar_data){const img=document.createElement("img");img.src=p.avatar_data;img.alt="";$("chatAvatar").appendChild(img);}else $("chatAvatar").textContent=initials(p?.display_name||"S");
@@ -235,7 +239,7 @@ async function selectPerson(id){
 function clearReply(){replyTo=null;$("replyPreview").hidden=true;$("replyPreviewText").textContent="";}
 function setReply(m){replyTo=m.id;$("replyPreview").hidden=false;$("replyPreviewText").textContent="رد على: "+(m.body||"صورة");$("messageText").focus();}
 async function loadMessages(){
- if(!selectedId)return;
+ if(!selectedId)return;if(!canContact(selectedId)){selectedId=null;localStorage.removeItem(SELECTED_KEY);messages=[];lastSignature="";renderMessages();return;}
  const rows=await api("wasel_chat_messages?select=id,room_id,sender_id,sender_name,recipient_id,body,image_data,audio_data,view_once,viewed_at,created_at,read_at,delivered_at,reply_to,reactions,deleted_at&room_id=eq."+ROOM+"&order=created_at.asc&limit=500");
  const oldIncoming=new Set(messages.filter(m=>m.sender_id===selectedId).map(m=>String(m.id)));
  messages=rows.filter(m=>!(m.body||"").startsWith(CALL_OFFER_PREFIX)&&((m.sender_id===myId&&m.recipient_id===selectedId)||(m.sender_id===selectedId&&m.recipient_id===myId)));
@@ -363,7 +367,7 @@ function queueTextMessage(body,recipientId,quotedId){
  queue.push(item);localStorage.setItem(PENDING_QUEUE_KEY,JSON.stringify(queue));updateOfflineBanner();if(selectedId===recipientId)renderMessages();return item;
 }
 async function retryPendingMessage(id){
- const item=readPendingQueue().find(x=>x.id===id);if(!item)return;
+ const item=readPendingQueue().find(x=>x.id===id);if(!item)return;if(!canContact(item.recipient_id)){localStorage.setItem(PENDING_QUEUE_KEY,JSON.stringify(readPendingQueue().filter(x=>x.id!==id)));updateOfflineBanner();contactRestrictionNotice();return;}
  if(!navigator.onLine){status("لا يوجد اتصال بالإنترنت بعد.",true);updateOfflineBanner();return;}
  try{
   await api("wasel_chat_messages",{method:"POST",headers:{"Prefer":"return=minimal"},body:JSON.stringify({room_id:ROOM,sender_id:item.sender_id,sender_name:item.sender_name,recipient_id:item.recipient_id,body:item.body,image_data:null,reply_to:item.reply_to})});
@@ -377,14 +381,14 @@ function installOfflineQueue(){
  window.addEventListener("online",()=>{updateOfflineBanner();retryAllPending().catch(()=>{});refresh().catch(()=>{});});
 }
 async function sendText(){
- const field=$("messageText"),body=field.value.trim();if(!body||!selectedId||selectedId===myId)return;
+ const field=$("messageText"),body=field.value.trim();if(!body||!selectedId||selectedId===myId)return;if(!canContact(selectedId)){contactRestrictionNotice();return;}
  const recipientId=selectedId,quotedId=replyTo;
  if(!navigator.onLine){queueTextMessage(body,recipientId,quotedId);field.value="";field.dispatchEvent(new Event("input",{bubbles:true}));clearReply();await setTyping(false);status("حُفظت الرسالة على هذا الجهاز وستحتاج إلى الإرسال عند عودة الإنترنت.");field.focus();return;}
  try{await api("wasel_chat_messages",{method:"POST",headers:{"Prefer":"return=minimal"},body:JSON.stringify({room_id:ROOM,sender_id:myId,sender_name:currentName(),recipient_id:recipientId,body,image_data:null,reply_to:quotedId})});field.value="";field.dispatchEvent(new Event("input",{bubbles:true}));clearReply();await setTyping(false);playSound();status("تم إرسال الرسالة.");await loadMessages();field.focus();}
  catch(e){if(e instanceof TypeError||!navigator.onLine){queueTextMessage(body,recipientId,quotedId);field.value="";field.dispatchEvent(new Event("input",{bubbles:true}));clearReply();status("انقطع الاتصال؛ حُفظت الرسالة محليًا لإعادة المحاولة.",true);}else status("تعذر إرسال الرسالة. شغّل schema.sql المحدّث في Supabase. "+e.message,true);}
 }
 async function sendImage(file){
- if(!file||!selectedId||selectedId===myId)return;if(!["image/jpeg","image/png","image/webp","image/gif"].includes(file.type)){status("اختر صورة JPG أو PNG أو WEBP أو GIF.",true);return;}if(file.size>350*1024){status("اختر صورة أصغر من 350KB حتى يمكن إرسالها.",true);return;}const viewOnce=confirm("هل تريد إرسال هذه الصورة للعرض مرة واحدة فقط؟\\nموافق = عرض مرة واحدة، إلغاء = صورة عادية.");
+ if(!file||!selectedId||selectedId===myId)return;if(!canContact(selectedId)){contactRestrictionNotice();return;}if(!["image/jpeg","image/png","image/webp","image/gif"].includes(file.type)){status("اختر صورة JPG أو PNG أو WEBP أو GIF.",true);return;}if(file.size>350*1024){status("اختر صورة أصغر من 350KB حتى يمكن إرسالها.",true);return;}const viewOnce=confirm("هل تريد إرسال هذه الصورة للعرض مرة واحدة فقط؟\\nموافق = عرض مرة واحدة، إلغاء = صورة عادية.");
  const reader=new FileReader();reader.onload=async()=>{try{await api("wasel_chat_messages",{method:"POST",headers:{"Prefer":"return=minimal"},body:JSON.stringify({room_id:ROOM,sender_id:myId,sender_name:currentName(),recipient_id:selectedId,body:"",image_data:reader.result,view_once:viewOnce,reply_to:replyTo})});clearReply();status("تم إرسال الصورة.");await loadMessages();}catch(e){status("تعذر إرسال الصورة. شغّل schema.sql المحدّث في Supabase.",true);}};reader.onerror=()=>status("تعذر قراءة الصورة.",true);reader.readAsDataURL(file);
 }
 async function setTyping(on){if(localStorage.getItem(GHOST_KEY)==="on"||!currentName()||!selectedId||selectedId===myId)return;try{await api("wasel_chat_people?user_id=eq."+encodeURIComponent(myId),{method:"PATCH",headers:{"Prefer":"return=minimal"},body:JSON.stringify({is_typing:on,typing_to:on?selectedId:null,last_seen:new Date().toISOString()})});}catch(e){}}
@@ -454,6 +458,7 @@ $("nameSetupForm").addEventListener("submit",async event=>{event.preventDefault(
 
 let voiceRecorder=null,voiceChunks=[],voiceStartedAt=0;
 async function sendVoiceBlob(blob){
+ if(selectedId&&!canContact(selectedId)){contactRestrictionNotice();return;}
  if(!selectedId||selectedId===myId){status("اختر صديقًا أولًا لإرسال رسالة صوتية.",true);return;}
  if(!blob||!blob.size){status("لم يتم تسجيل صوت. حاول مرة أخرى.",true);return;}
  if(blob.size>350*1024){status("التسجيل كبير جدًا. سجّل مقطعًا أقصر من 45 ثانية.",true);return;}
