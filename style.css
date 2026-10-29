@@ -499,3 +499,22 @@ button .ui-icon,.attach-option .ui-icon,.searchbox .ui-icon{pointer-events:none}
 .emoji-choice img,.emoji-panel img.emoji,.reaction-chip img.emoji,.reaction-row img.emoji,.message-actions img.emoji,.formatted-message img.emoji{width:1.25em;height:1.25em;max-width:1.25em;max-height:1.25em;display:inline-block;vertical-align:-.22em;object-fit:contain}
 .emoji-choice{display:inline-flex;align-items:center;justify-content:center}
 .ui-icon{display:inline-block;flex:0 0 auto;vertical-align:middle}
+
+/* Themed wallpaper gallery: each preset pairs a chat background with matching bubbles */
+#chatLog[data-background="classic"]{background-color:#efeae2;background-image:radial-gradient(circle at 20% 20%,rgba(95,115,103,.05) 0 1px,transparent 1.5px),radial-gradient(circle at 75% 70%,rgba(95,115,103,.045) 0 1px,transparent 1.5px);background-size:23px 23px,31px 31px}
+#chatLog[data-background="dark"]{background-color:#0b141a;background-image:radial-gradient(circle at 18% 22%,rgba(180,205,194,.045) 0 1px,transparent 1.5px),radial-gradient(circle at 78% 68%,rgba(180,205,194,.035) 0 1px,transparent 1.5px);background-size:27px 27px,35px 35px}
+#chatLog[data-background="purple"]{background-color:#f3edfb;background-image:radial-gradient(ellipse at 15% 15%,#e5d8f7 0,transparent 45%),radial-gradient(ellipse at 90% 85%,#f8e8f6 0,transparent 48%)}
+#chatLog[data-background="ocean"]{background-color:#d9eff8;background-image:radial-gradient(ellipse at 12% 10%,rgba(91,188,225,.3),transparent 48%),linear-gradient(145deg,#d8eff9,#eefaff 65%,#c8e7f5)}
+#chatLog[data-background="custom"]{background-repeat:no-repeat;background-attachment:local}
+#chatLog .bubble.mine{background:var(--wall-bubble-sent,var(--bubble-sent));color:var(--wall-text,var(--text-primary));}
+#chatLog .bubble:not(.mine){background:var(--wall-bubble-received,var(--bubble-received));color:var(--wall-text,var(--text-primary));}
+#chatLog .bubble .stamp{color:var(--wall-stamp,var(--text-secondary))}
+.wallpaper-label{display:block!important}
+.wallpaper-label select{max-width:none!important;background:var(--bg-input)!important;color:var(--text-primary)!important;border:1px solid var(--border-color)!important}
+.chat-menu .wallpaper-upload{display:flex!important;align-items:center;gap:8px;border:1px solid var(--border-color)!important;background:var(--accent-soft)!important;color:var(--text-primary)!important;cursor:pointer}
+.wallpaper-upload input{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden}
+.wallpaper-note{display:block;padding:2px 10px 8px;color:var(--text-secondary);font-size:10px;line-height:1.6}
+:root[data-mode="dark"] #chatLog[data-background="classic"]{background-color:#0b141a;background-image:radial-gradient(circle at 20% 20%,rgba(180,205,194,.035) 0 1px,transparent 1.5px),radial-gradient(circle at 75% 70%,rgba(180,205,194,.03) 0 1px,transparent 1.5px)}
+:root[data-mode="dark"] #chatLog[data-background="purple"]{background-color:#171321;background-image:radial-gradient(ellipse at 15% 15%,#2d2140 0,transparent 45%),radial-gradient(ellipse at 90% 85%,#2a192c 0,transparent 48%)}
+:root[data-mode="dark"] #chatLog[data-background="ocean"]{background-color:#0c202b;background-image:radial-gradient(ellipse at 12% 10%,rgba(27,109,147,.32),transparent 48%),linear-gradient(145deg,#0b202c,#102e3a 65%,#0b1d29)}
+@media(max-width:620px){.wallpaper-note{font-size:9px}.chat-menu{max-height:75dvh;overflow-y:auto}}
