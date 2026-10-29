@@ -581,3 +581,7 @@ button .ui-icon,.attach-option .ui-icon,.searchbox .ui-icon{pointer-events:none}
 :root[data-mode="dark"] .offline-queue-banner{background:#3b321c;color:#ffe8a1;border-color:#66562a}
 :root[data-mode="dark"] .offline-queue-banner button{background:#ffe8a1;color:#30270e}
 :root[data-mode="dark"] .pending-bubble{border-color:#d6a23b!important}
+
+.voice-message-player{display:block;width:min(100%,320px);min-width:220px;margin:6px 0;border-radius:22px;}
+#sendMessage.recording{background:#c62828;color:#fff;animation:voicePulse 1.2s ease-in-out infinite alternate}
+@keyframes voicePulse{from{opacity:1}to{opacity:.72}}
