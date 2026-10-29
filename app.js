@@ -340,7 +340,8 @@ async function toggleVoiceRecording(){
   setTimeout(()=>{if(voiceRecorder&&voiceRecorder.state==="recording"){status("انتهت مدة التسجيل القصوى.");voiceRecorder.stop();$("sendMessage").classList.remove("recording");}},45000);
  }catch(e){status("لم نتمكن من تشغيل الميكروفون. اسمح للموقع باستخدام الميكروفون ثم أعد المحاولة.",true);}
 }
-\n$("messageForm").addEventListener("submit",e=>{e.preventDefault();if(!$("messageText").value.trim()){toggleVoiceRecording();return;}if(voiceRecorder&&voiceRecorder.state==="recording"){status("أوقف التسجيل أولًا.",true);return;}sendText();});
+
+$("messageForm").addEventListener("submit",e=>{e.preventDefault();if(!$("messageText").value.trim()){toggleVoiceRecording();return;}if(voiceRecorder&&voiceRecorder.state==="recording"){status("أوقف التسجيل أولًا.",true);return;}sendText();});
 $("chatImage").addEventListener("change",e=>{const f=e.target.files&&e.target.files[0];if(f)sendImage(f);e.target.value="";});
 $("messageText").addEventListener("input",()=>{const hasText=Boolean($("messageText").value.trim());$("sendMessage").classList.toggle("has-text",hasText);$("sendIcon").innerHTML=uiIcon(hasText?"send":"mic");$("sendMessage").setAttribute("aria-label",hasText?"إرسال الرسالة":"بدء أو إنهاء تسجيل رسالة صوتية");setTyping(true);clearTimeout(typingTimer);typingTimer=setTimeout(()=>setTyping(false),1800);});
 $("messageText").addEventListener("blur",()=>setTyping(false));
