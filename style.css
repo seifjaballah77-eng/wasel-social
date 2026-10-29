@@ -297,3 +297,30 @@ body{min-width:320px;overflow-x:hidden}
 :root[data-mode="dark"] .bubble:not(.mine){background:#1a293e;color:#e5eefb}
 :root[data-mode="dark"] .welcome{color:#a8b9d0}
 @media(max-width:620px){.topright{gap:8px}.mode-toggle{padding:8px;font-size:10px}.secure{display:none}.message-search-input{font-size:16px}}
+
+/* Twemoji artwork and complete emoji picker */
+img.emoji{height:1.25em;width:1.25em;margin:0 .035em;vertical-align:-.22em;display:inline-block;object-fit:contain;pointer-events:none}
+.emoji-choice img.emoji{height:28px;width:28px;margin:0;vertical-align:middle}
+.emoji-picker-full{position:relative;z-index:30;max-width:100%;padding:12px;background:var(--panel,#fff);border:1px solid #dce4f2;border-radius:16px;box-shadow:0 16px 40px #16233c24}
+.emoji-search{width:100%;padding:10px 12px;border:1px solid #dce4f2;border-radius:10px;background:#f7f9fd;color:inherit;font:inherit;outline:none}
+.emoji-tabs{display:flex;gap:6px;overflow-x:auto;padding:9px 0}
+.emoji-tab{flex:0 0 auto;border:1px solid #dce4f2;background:#f5f7fc;color:#40516b;border-radius:9px;padding:6px 9px;font:inherit;font-size:11px;cursor:pointer}
+.emoji-tab.active{background:#e5edff;border-color:#8eabff;color:#244ac0}
+.emoji-grid{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:4px;max-height:230px;overflow:auto;padding:3px}
+.emoji-choice{display:grid;place-items:center;min-width:0;min-height:39px;border:0;border-radius:9px;background:transparent;font-size:24px;cursor:pointer}
+.emoji-choice:hover,.emoji-choice:focus-visible{background:#eaf0fc;outline:2px solid #86a6ff}
+.emoji-empty{grid-column:1/-1;text-align:center;color:#75839a;font-size:12px}
+.emoji-credit{display:inline-block;margin-inline-start:8px;font-size:9px;color:#8793a7}
+.call-overlay{z-index:10000;padding:12px}
+.call-card{width:min(100%,1050px);height:min(90vh,760px);display:flex;flex-direction:column;overflow:hidden;background:#0b1220;color:#eef5ff;border:1px solid #26374f;border-radius:18px;box-shadow:0 30px 100px #0008}
+.call-card-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;background:#111c2e}
+.call-close{border:1px solid #ff6b7b;background:#3a1722;color:#fff;border-radius:10px;padding:8px 12px;cursor:pointer;font:inherit}
+.call-note{margin:0;padding:7px 14px;background:#142137;color:#c4d4e8;font-size:12px}
+.jitsi-mount{flex:1;min-height:0;background:#080d17}
+.jitsi-mount iframe{border:0}
+:root[data-mode="dark"] .emoji-picker-full{background:#0f1726;border-color:#28384f}
+:root[data-mode="dark"] .emoji-search{background:#111e30;border-color:#2a3c54;color:#e7effc}
+:root[data-mode="dark"] .emoji-tab{background:#172337;border-color:#2b3d55;color:#dce8f7}
+:root[data-mode="dark"] .emoji-tab.active{background:#233d66;border-color:#5b8dff;color:#fff}
+:root[data-mode="dark"] .emoji-choice:hover,:root[data-mode="dark"] .emoji-choice:focus-visible{background:#23354d}
+@media(max-width:620px){.emoji-grid{grid-template-columns:repeat(7,minmax(0,1fr));max-height:190px}.call-card{height:94vh;border-radius:12px}.call-card-head{padding:9px 11px}}
