@@ -23,8 +23,42 @@ async function api(path,options={}){
  const raw=await response.text();return raw?JSON.parse(raw):[];
 }
 
-let activeCallApi=null,callScriptPromise=null,activeCallInfo=null,callClockTimer=null;
+let activeCallApi=null,callScriptPromise=null,activeCallInfo=null,callClockTimer=null,incomingRingTimer=null,incomingToneTimer=null,handledCallOffers=new Set(),incomingCallOffer=null,ringAudioContext=null;
 const CALL_LOG_PREFIX="[[SEIF_CALL_LOG]]";
+const CALL_OFFER_PREFIX="[[SEIF_CALL_OFFER]]";
+function startRingtone(){
+ stopRingtone();
+ try{ringAudioContext=ringAudioContext||new (window.AudioContext||window.webkitAudioContext)();ringAudioContext.resume?.();const beep=()=>{if(!ringAudioContext||ringAudioContext.state!=="running")return;const osc=ringAudioContext.createOscillator(),gain=ringAudioContext.createGain();osc.type="sine";osc.frequency.value=880;gain.gain.value=.045;osc.connect(gain);gain.connect(ringAudioContext.destination);osc.start();osc.stop(ringAudioContext.currentTime+.22);};beep();incomingToneTimer=setInterval(()=>{beep();setTimeout(beep,350);},1250);}catch(e){console.warn("Ringtone unavailable",e);}
+}
+function stopRingtone(){clearInterval(incomingToneTimer);incomingToneTimer=null;}
+function ensureIncomingCallModal(){
+ let overlay=$("incomingCallModal");if(overlay)return overlay;
+ overlay=document.createElement("div");overlay.id="incomingCallModal";overlay.className="modal-overlay incoming-call-overlay";overlay.hidden=true;
+ const card=document.createElement("section");card.className="incoming-call-card";
+ const icon=document.createElement("div");icon.className="incoming-call-icon";icon.textContent="☎";
+ const title=document.createElement("h2");title.id="incomingCallTitle";title.textContent="مكالمة واردة";
+ const note=document.createElement("p");note.id="incomingCallNote";note.textContent="يتصل بك صديقك";
+ const actions=document.createElement("div");actions.className="incoming-call-actions";
+ const decline=document.createElement("button");decline.type="button";decline.className="decline-call";decline.textContent="رفض";decline.addEventListener("click",()=>answerIncomingCall(false));
+ const accept=document.createElement("button");accept.type="button";accept.className="accept-call";accept.textContent="قبول";accept.addEventListener("click",()=>answerIncomingCall(true));
+ actions.append(decline,accept);card.append(icon,title,note,actions);overlay.append(card);document.body.append(overlay);return overlay;
+}
+function showIncomingCall(m,kind){
+ if(activeCallInfo||incomingCallOffer||handledCallOffers.has(String(m.id)))return;
+ incomingCallOffer={id:m.id,callerId:m.sender_id,callerName:m.sender_name||"صديقك",kind,createdAt:m.created_at};
+ const overlay=ensureIncomingCallModal();$("incomingCallTitle").textContent=kind==="video"?"مكالمة فيديو واردة":"مكالمة صوتية واردة";$("incomingCallNote").textContent=(m.sender_name||"صديقك")+" يتصل بك…";
+ overlay.hidden=false;startRingtone();status("مكالمة واردة من "+(m.sender_name||"صديقك"));
+}
+async function answerIncomingCall(accept){
+ const offer=incomingCallOffer;if(!offer)return;
+ incomingCallOffer=null;handledCallOffers.add(String(offer.id));stopRingtone();const overlay=$("incomingCallModal");if(overlay)overlay.hidden=true;
+ try{
+  const result=accept?"accepted":"declined";
+  await api("wasel_chat_messages?id=eq."+encodeURIComponent(offer.id)+"&recipient_id=eq."+encodeURIComponent(myId),{method:"PATCH",headers:{"Prefer":"return=minimal"},body:JSON.stringify({body:[CALL_OFFER_PREFIX,offer.kind,result,String(Date.now())].join("|")})});
+ }catch(e){console.warn("Could not update call request",e);}
+ if(accept){await selectPerson(offer.callerId);await startCall(offer.kind,true);}
+ else{status("تم رفض المكالمة.");}
+}
 function formatCallDuration(seconds){const n=Math.max(0,Number(seconds)||0);return String(Math.floor(n/60)).padStart(2,"0")+":"+String(n%60).padStart(2,"0");}
 async function saveCallLog(info){
  if(!info||info.saved)return;info.saved=true;
@@ -53,15 +87,21 @@ function loadJitsiScript(){
  callScriptPromise=new Promise((resolve,reject)=>{const script=document.createElement("script");script.src="https://meet.jit.si/external_api.js";script.async=true;script.onload=()=>window.JitsiMeetExternalAPI?resolve():reject(new Error("تعذر تحميل مكتبة الاتصال."));script.onerror=()=>reject(new Error("تعذر الوصول إلى خدمة الاتصال. تحقق من الإنترنت."));document.head.appendChild(script);});
  return callScriptPromise;
 }
-async function startCall(kind){
+async function startCall(kind,isIncoming=false){
  if(!selectedId||selectedId===myId){status("اختر صديقًا من قائمة الأشخاص أولًا.",true);return;}
  const person=people.find(p=>p.user_id===selectedId);if(!person){status("لم يتم العثور على جهة الاتصال. حدّث قائمة الأشخاص أولًا.",true);return;}
  if(activeCallApi||activeCallInfo){status("هناك مكالمة جارية بالفعل.",true);return;}
+ const peerId=selectedId;
+ if(!isIncoming){
+  try{
+   await api("wasel_chat_messages",{method:"POST",headers:{"Prefer":"return=minimal"},body:JSON.stringify({room_id:ROOM,sender_id:myId,sender_name:currentName()||"مستخدم",recipient_id:peerId,body:[CALL_OFFER_PREFIX,kind,"ringing",String(Date.now())].join("|"),image_data:null})});
+  }catch(e){status("تعذر إرسال طلب المكالمة. تحقق من اتصال Supabase وصلاحيات الرسائل.",true);return;}
+ }
  const overlay=ensureCallModal();overlay.hidden=false;
  $("callModalTitle").textContent=(kind==="video"?"مكالمة فيديو مع ":"مكالمة صوتية مع ")+(person.display_name||"صديقك");
- $("callModalNote").textContent="جارٍ الاتصال… يجب أن يفتح صديقك الموقع ويضغط زر الاتصال نفسه للانضمام. الرنين التلقائي غير متاح بعد.";
- const mount=$("jitsiMount");mount.replaceChildren();status("جارٍ الاتصال بخدمة المكالمات…");
- activeCallInfo={peerId:selectedId,peerName:person.display_name||"صديقك",kind,startedAt:Date.now(),joinedAt:0,peerJoined:false,saved:false};
+ $("callModalNote").textContent=isIncoming?"تم قبول المكالمة، جارٍ الانضمام…":"جارٍ الرنين لدى الطرف الآخر. انتظر قبول المكالمة…";
+ const mount=$("jitsiMount");mount.replaceChildren();status(isIncoming?"جارٍ الانضمام إلى المكالمة…":"تم إرسال طلب المكالمة؛ جارٍ الاتصال…");
+ activeCallInfo={peerId,peerName:person.display_name||"صديقك",kind,startedAt:Date.now(),joinedAt:0,peerJoined:false,saved:false};
  try{
   await loadJitsiScript();
   if(overlay.hidden||!activeCallInfo)return;
@@ -196,7 +236,7 @@ async function loadMessages(){
  if(!selectedId)return;
  const rows=await api("wasel_chat_messages?select=id,room_id,sender_id,sender_name,recipient_id,body,image_data,audio_data,view_once,viewed_at,created_at,read_at,delivered_at,reply_to,reactions,deleted_at&room_id=eq."+ROOM+"&order=created_at.asc&limit=500");
  const oldIncoming=new Set(messages.filter(m=>m.sender_id===selectedId).map(m=>String(m.id)));
- messages=rows.filter(m=>(m.sender_id===myId&&m.recipient_id===selectedId)||(m.sender_id===selectedId&&m.recipient_id===myId));
+ messages=rows.filter(m=>!(m.body||"").startsWith(CALL_OFFER_PREFIX)&&((m.sender_id===myId&&m.recipient_id===selectedId)||(m.sender_id===selectedId&&m.recipient_id===myId)));
  const incoming=messages.filter(m=>m.sender_id===selectedId&&m.recipient_id===myId&&!m.deleted_at);
  for(const m of incoming){if(!oldIncoming.has(String(m.id))&&lastIncomingId!==0&&!notifiedIds.has(String(m.id))){notifyIncoming(m);notifiedIds.add(String(m.id));}lastIncomingId=Math.max(lastIncomingId,Number(m.id)||0);}
  if(document.visibilityState==="visible"&&localStorage.getItem(GHOST_KEY)!=="on"){
@@ -358,7 +398,18 @@ function openNameSetup(){$("displayNameInput").value=currentName();$("nameSetupE
 let incomingInitialized=false;
 async function pollIncoming(){
  const rows=await api("wasel_chat_messages?select=id,sender_id,sender_name,body,image_data,created_at,delivered_at&recipient_id=eq."+encodeURIComponent(myId)+"&room_id=eq."+ROOM+"&order=created_at.desc&limit=100");
- const newRows=rows.filter(m=>m.sender_id!==myId&&!notifiedIds.has(String(m.id)));
+ const callRows=rows.filter(m=>(m.body||"").startsWith(CALL_OFFER_PREFIX)&&m.sender_id!==myId);
+ for(const m of callRows){
+  const bits=m.body.split("|");if(bits[2]!=="ringing"||handledCallOffers.has(String(m.id)))continue;
+  if(Date.now()-new Date(m.created_at).getTime()>35000){
+   handledCallOffers.add(String(m.id));
+   try{await api("wasel_chat_messages?id=eq."+encodeURIComponent(m.id)+"&recipient_id=eq."+encodeURIComponent(myId),{method:"PATCH",headers:{"Prefer":"return=minimal"},body:JSON.stringify({body:[CALL_OFFER_PREFIX,bits[1],"missed",String(Date.now())].join("|")})});}catch(e){}
+   continue;
+  }
+  showIncomingCall(m,bits[1]==="video"?"video":"audio");
+ }
+ const regularRows=rows.filter(m=>!(m.body||"").startsWith(CALL_OFFER_PREFIX));
+ const newRows=regularRows.filter(m=>m.sender_id!==myId&&!notifiedIds.has(String(m.id)));
  if(!incomingInitialized){newRows.forEach(m=>notifiedIds.add(String(m.id)));incomingInitialized=true;}
  else newRows.forEach(m=>{notifiedIds.add(String(m.id));notifyIncoming(m);});
  const undelivered=rows.filter(m=>!m.delivered_at&&m.sender_id!==myId);
