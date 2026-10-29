@@ -312,11 +312,10 @@ $("peopleSearch").addEventListener("input",renderPeople);
 $("deleteAccountButton").addEventListener("click",async()=>{
  if(!currentName()){status("لا يوجد حساب نشط لحذفه.",true);return;}
  if(!confirm("هل تريد حذف حسابك «"+currentName()+"» من قائمة الأشخاص؟\n\nسيُحذف ملفك الشخصي من الخادم وإعدادات الهوية من هذا المتصفح. قد تبقى الرسائل القديمة في قاعدة البيانات."))return;
- const typed=prompt("للتأكيد النهائي، اكتب كلمة حذف:");
- if(typed!=="حذف"){status("تم إلغاء حذف الحساب.");return;}
  const button=$("deleteAccountButton");button.disabled=true;button.textContent="جارٍ الحذف…";
  try{
-  await api("wasel_chat_people?user_id=eq."+encodeURIComponent(myId)+"&room_id=eq."+encodeURIComponent(ROOM),{method:"DELETE",headers:{"Prefer":"return=minimal"}});
+  const deleted=await api("wasel_chat_people?user_id=eq."+encodeURIComponent(myId)+"&room_id=eq."+encodeURIComponent(ROOM),{method:"DELETE",headers:{"Prefer":"return=representation"}});
+  if(!Array.isArray(deleted)||deleted.length===0)throw new Error("لم يُحذف أي سجل. افتح Supabase وشغّل schema.sql لتفعيل صلاحية حذف الحساب، ثم أعد المحاولة.");
   const accounts=JSON.parse(localStorage.getItem(ACCOUNTS_KEY)||"[]").filter(a=>a.id!==myId);
   localStorage.setItem(ACCOUNTS_KEY,JSON.stringify(accounts));
   [PROFILE_KEY,ID_KEY,PHOTO_KEY,BIO_KEY,SELECTED_KEY].forEach(key=>localStorage.removeItem(key));
