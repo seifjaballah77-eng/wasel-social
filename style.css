@@ -265,3 +265,35 @@ body{min-width:320px;overflow-x:hidden}
 .bubble{position:relative;max-width:min(78%,680px);padding:10px 12px 7px;border-radius:15px;overflow-wrap:anywhere}.bubble.mine{align-self:flex-start;background:#0d6b54;color:#effff8;border-bottom-right-radius:5px}.bubble:not(.mine){align-self:flex-end;background:#172438;color:#e5eefb;border-bottom-left-radius:5px}.bubble .stamp{display:flex;justify-content:flex-end;gap:5px;align-items:center;margin-top:5px;font-size:9px;color:#b4c5d7}.read-receipt.is-read{color:#4dd9ff}
 .chat-menu[hidden],.attachment-menu[hidden],.modal-overlay[hidden]{display:none!important}#sendMessage.has-text{background:linear-gradient(135deg,#19c7db,#2775ff);color:#fff}#sendMessage b{display:block;font-size:20px}#chatLog{display:flex;flex-direction:column}.bubble{touch-action:pan-y}
 @media(max-width:620px){.head-icon{width:31px;height:31px;border-radius:10px}.chat-options{max-width:none;flex-wrap:nowrap}.chat-menu{left:0;right:auto}.attachment-menu{grid-template-columns:repeat(2,minmax(0,1fr))}.bubble{max-width:88%}.chathead{gap:6px}.chatperson{gap:8px}.chatperson h2{font-size:13px}.chatperson p{font-size:10px}}
+
+.mode-toggle{border:1px solid #dce4f2;background:#f5f8ff;color:#41516b;border-radius:999px;padding:9px 12px;font:inherit;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap}
+.message-search-input{width:100%;margin:5px 0 8px;padding:10px;border:1px solid #2b4058;border-radius:9px;background:#101d30;color:#e9f4ff;font:inherit;font-size:12px;outline:none}
+.message-search-input:focus{border-color:#37d9ee;box-shadow:0 0 0 2px #37d9ee22}
+.formatted-message strong{font-weight:800}.formatted-message em{font-style:italic}.formatted-message code{font-family:ui-monospace,monospace;background:#00000015;padding:1px 4px;border-radius:4px}
+:root[data-mode="dark"]{color:#e5edf9;background:#080d17;color-scheme:dark}
+:root[data-mode="dark"] body{background:radial-gradient(ellipse at 80% 0%,#14233d 0,transparent 42%),#080d17;color:#e5edf9}
+:root[data-mode="dark"] .topbar{background:#0d1422e8;border-color:#202c3e}
+:root[data-mode="dark"] .brand{color:#eaf2ff}
+:root[data-mode="dark"] .secure,:root[data-mode="dark"] .eyebrow,:root[data-mode="dark"] footer{color:#9aa9bf}
+:root[data-mode="dark"] .identity,:root[data-mode="dark"] .mode-toggle{background:#172337;border-color:#2a3a52;color:#dce9fa}
+:root[data-mode="dark"] .panel{background:#0f1726;border-color:#243247;box-shadow:0 14px 50px #0003}
+:root[data-mode="dark"] .sidehead h1,:root[data-mode="dark"] .chatperson h2{color:#e7effc}
+:root[data-mode="dark"] .searchbox,:root[data-mode="dark"] .searchbox input,:root[data-mode="dark"] .side-action{background:#131f31;border-color:#2a3b52;color:#dce8f7}
+:root[data-mode="dark"] .person{border-color:transparent;color:#dce8f7}
+:root[data-mode="dark"] .person:hover,:root[data-mode="dark"] .person.active{background:#17263b;border-color:#28435d}
+:root[data-mode="dark"] .personmeta small,:root[data-mode="dark"] .chatperson p,:root[data-mode="dark"] .composerhint,:root[data-mode="dark"] .privacyhint{color:#93a5bd}
+:root[data-mode="dark"] .chathead,:root[data-mode="dark"] .composerwrap{background:#101928;border-color:#243247}
+:root[data-mode="dark"] .chatlog,:root[data-mode="dark"] #chatLog[data-background="plain"]{background:#0a1220}
+:root[data-mode="dark"] #chatLog[data-background="blue"]{background:linear-gradient(145deg,#101d31,#0c1524)}
+:root[data-mode="dark"] #chatLog[data-background="purple"]{background:linear-gradient(145deg,#21162e,#10111e)}
+:root[data-mode="dark"] #chatLog[data-background="green"]{background:linear-gradient(145deg,#10271f,#0b1716)}
+:root[data-mode="dark"] .messageform input,:root[data-mode="dark"] .modal-card input,:root[data-mode="dark"] .modal-card textarea{background:#111e30;border-color:#2a3c54;color:#e7effc}
+:root[data-mode="dark"] .modal-card{background:#0f1726;color:#e5edf9;border-color:#28384f}
+:root[data-mode="dark"] .modal-card label,:root[data-mode="dark"] .modal-card h2{color:#e5edf9}
+:root[data-mode="dark"] .reply-preview,:root[data-mode="dark"] .emoji-panel{background:#172337;color:#dce8f7}
+:root[data-mode="dark"] .emoji-panel button{color:#e5edf9}
+:root[data-mode="dark"] .attach-button,:root[data-mode="dark"] .attach-option{background:#172337;border-color:#2b3d55;color:#dce8f7}
+:root[data-mode="dark"] .day-divider{background:#142136;border-color:#2c4059;color:#a8bed4}
+:root[data-mode="dark"] .bubble:not(.mine){background:#1a293e;color:#e5eefb}
+:root[data-mode="dark"] .welcome{color:#a8b9d0}
+@media(max-width:620px){.topright{gap:8px}.mode-toggle{padding:8px;font-size:10px}.secure{display:none}.message-search-input{font-size:16px}}
