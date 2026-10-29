@@ -833,3 +833,6 @@ body.mobile-chat-open .topbar .profile-open {
 .update-notice .update-dismiss{background:transparent;color:#d6eee7;border-color:#46635e}
 .update-notice button:focus-visible{outline:2px solid #39f5ff;outline-offset:2px}
 @media(max-width:620px){.update-notice{gap:7px;padding:8px 9px;font-size:11px}.update-notice button{padding:6px 9px}}
+
+/* Live typing indicator */
+.chathead #chatSubtitle.typing-now{color:#00b8a9;font-weight:700}.chathead #chatSubtitle.typing-now::after{content:"";display:inline-block;width:5px;height:5px;margin-inline-start:6px;border-radius:50%;background:currentColor;animation:typingPulse 0.7s ease-in-out infinite alternate}@keyframes typingPulse{from{opacity:.35;transform:scale(.75)}to{opacity:1;transform:scale(1.15)}}
