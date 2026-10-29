@@ -594,3 +594,20 @@ button .ui-icon,.attach-option .ui-icon,.searchbox .ui-icon{pointer-events:none}
 .delete-account-area small{font-size:10px;color:#b91c1c;line-height:1.5}
 :root[data-mode="dark"] .delete-account-button{background:#35191d!important;color:#fca5a5!important;border-color:#ef4444!important}
 :root[data-mode="dark"] .delete-account-area{border-color:#3b4650}
+
+/* Call history records and compact call list */
+.call-history-bubble{display:grid;grid-template-columns:42px minmax(0,1fr);align-items:center;column-gap:10px;min-width:230px;max-width:min(92%,340px);padding:13px 15px!important;border:1px solid rgba(0,168,132,.25);background:linear-gradient(135deg,rgba(0,168,132,.12),rgba(57,245,255,.06))!important;color:var(--text-primary,#e9edef)!important;border-radius:16px!important}
+.call-bubble-icon,.call-history-icon{display:grid;place-items:center;width:40px;height:40px;border-radius:50%;background:rgba(0,168,132,.16);color:#00a884;font-size:21px}
+.call-bubble-details,.call-history-details{display:flex;flex-direction:column;gap:4px;min-width:0}
+.call-bubble-details strong,.call-history-details strong{font-size:13px;font-weight:800}
+.call-bubble-details small,.call-history-details small{font-size:11px;opacity:.78;line-height:1.5}
+.call-history-bubble .stamp{grid-column:2;margin-top:5px}
+.calls-history-overlay{z-index:10020}
+.calls-history-card{width:min(100%,520px);max-height:min(82vh,720px);display:flex;flex-direction:column;overflow:hidden;background:var(--bg-sidebar,#0b141a);color:var(--text-primary,#e9edef);border:1px solid var(--border-color,#26343b);border-radius:18px;box-shadow:0 24px 80px #0007}
+.calls-history-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border-bottom:1px solid var(--border-color,#26343b)}
+.calls-history-head h2{margin:0;font-size:17px}
+.calls-history-list{display:flex;flex-direction:column;gap:7px;padding:12px;overflow:auto;min-height:100px}
+.call-history-item{display:flex;align-items:center;gap:12px;width:100%;padding:11px;border:1px solid var(--border-color,#26343b);border-radius:12px;background:transparent;color:inherit;text-align:right;font:inherit;cursor:pointer}
+.call-history-item:hover{background:rgba(0,168,132,.08)}
+.call-history-item .call-history-icon{flex:0 0 40px}
+@media(max-width:620px){.call-history-bubble{min-width:210px;padding:11px!important}.calls-history-card{max-height:90vh}}
