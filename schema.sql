@@ -181,3 +181,17 @@ grant select, insert, update on public.wasel_chat_people to anon;
 alter table public.wasel_chat_messages add column if not exists view_once boolean not null default false;
 alter table public.wasel_chat_messages add column if not exists viewed_at timestamptz;
 create index if not exists wasel_chat_messages_view_once_idx on public.wasel_chat_messages(id) where view_once = true;
+
+-- Compatibility migration for current Seif Messages client (safe to re-run).
+alter table public.wasel_chat_messages add column if not exists view_once boolean not null default false;
+alter table public.wasel_chat_messages add column if not exists viewed_at timestamptz;
+alter table public.wasel_chat_messages add column if not exists read_at timestamptz;
+alter table public.wasel_chat_messages add column if not exists delivered_at timestamptz;
+alter table public.wasel_chat_messages add column if not exists reply_to bigint;
+alter table public.wasel_chat_messages add column if not exists reactions jsonb not null default '{}'::jsonb;
+alter table public.wasel_chat_messages add column if not exists deleted_at timestamptz;
+alter table public.wasel_chat_people add column if not exists avatar_data text;
+alter table public.wasel_chat_people add column if not exists is_typing boolean not null default false;
+alter table public.wasel_chat_people add column if not exists typing_to text;
+create index if not exists wasel_chat_messages_view_once_idx on public.wasel_chat_messages(id) where view_once = true;
+notify pgrst, 'reload schema';
