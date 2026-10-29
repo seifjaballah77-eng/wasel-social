@@ -144,6 +144,9 @@ create policy "Wasel public people insert" on public.wasel_chat_people
 drop policy if exists "Wasel public people update" on public.wasel_chat_people;
 create policy "Wasel public people update" on public.wasel_chat_people
   for update to anon using (room_id = 'wasel-friends') with check (room_id = 'wasel-friends');
+drop policy if exists "Wasel public people delete" on public.wasel_chat_people;
+create policy "Wasel public people delete" on public.wasel_chat_people
+  for delete to anon using (room_id = 'wasel-friends');
 
 drop policy if exists "Wasel public messages read" on public.wasel_chat_messages;
 create policy "Wasel public messages read" on public.wasel_chat_messages
@@ -153,7 +156,7 @@ create policy "Wasel public messages insert" on public.wasel_chat_messages
   for insert to anon with check (room_id = 'wasel-friends');
 
 grant usage on schema public to anon;
-grant select, insert, update on public.wasel_chat_people to anon;
+grant select, insert, update, delete on public.wasel_chat_people to anon;
 grant select, insert on public.wasel_chat_messages to anon;
 grant usage, select on sequence public.wasel_chat_messages_id_seq to anon;
 
@@ -175,7 +178,7 @@ drop policy if exists "Wasel public messages update" on public.wasel_chat_messag
 create policy "Wasel public messages update" on public.wasel_chat_messages
   for update to anon using (room_id = 'wasel-friends') with check (room_id = 'wasel-friends');
 grant select, insert, update on public.wasel_chat_messages to anon;
-grant select, insert, update on public.wasel_chat_people to anon;
+grant select, insert, update, delete on public.wasel_chat_people to anon;
 
 
 -- One-time-view image support (client-enforced MVP; not DRM or end-to-end encryption).
