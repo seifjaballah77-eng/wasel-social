@@ -204,3 +204,12 @@ alter table public.wasel_chat_people add column if not exists is_typing boolean 
 alter table public.wasel_chat_people add column if not exists typing_to text;
 create index if not exists wasel_chat_messages_view_once_idx on public.wasel_chat_messages(id) where view_once = true;
 notify pgrst, 'reload schema';
+
+
+-- Ensure account deletion works for the anonymous-ID chat client (re-runnable).
+drop policy if exists "Wasel public people delete" on public.wasel_chat_people;
+create policy "Wasel public people delete" on public.wasel_chat_people
+  for delete to anon using (room_id = 'wasel-friends');
+grant usage on schema public to anon;
+grant select, insert, update, delete on public.wasel_chat_people to anon;
+notify pgrst, 'reload schema';
