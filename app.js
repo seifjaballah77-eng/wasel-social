@@ -224,7 +224,7 @@ function renderPeople(){
  }
 }
 async function selectPerson(id){
- if(id!==myId&&!await unlockChatIfNeeded(id))return;selectedId=id;localStorage.setItem(SELECTED_KEY,id);document.body.classList.add("mobile-chat-open");document.querySelectorAll(".navitem").forEach(n=>n.classList.toggle("active",n.dataset.view==="chats"));
+ if(id!==myId&&!await unlockChatIfNeeded(id))return;selectedId=id;localStorage.setItem(SELECTED_KEY,id);document.body.classList.add("mobile-chat-open");document.querySelectorAll(".navitem").forEach(n=>n.classList.toggle("active",n.dataset.view==="people"));
  const p=people.find(x=>x.user_id===id);$("chatTitle").textContent=p?(id===myId?"ملاحظاتي":p.display_name):"المحادثة";$("chatSubtitle").textContent=p?(id!==myId&&p.is_typing&&p.typing_to===myId?"يكتب الآن…":Date.now()-new Date(p.last_seen).getTime()<90000?"متصل الآن":"آخر ظهور: "+timeLabel(p.last_seen)):"";
  applyChatBackground();const muteMap=JSON.parse(localStorage.getItem(MUTE_KEY)||"{}");$("muteChat").textContent=muteMap[id]?uiIcon("bellOff")+" إلغاء كتم المحادثة":uiIcon("bell")+" كتم المحادثة";$("chatAvatar").replaceChildren();if(p?.avatar_data){const img=document.createElement("img");img.src=p.avatar_data;img.alt="";$("chatAvatar").appendChild(img);}else $("chatAvatar").textContent=initials(p?.display_name||"S");
  $("messageText").disabled=!p||id===myId;$("sendMessage").disabled=!p||id===myId;$("chatImage").disabled=!p||id===myId;$("cameraImage").disabled=!p||id===myId;$("chatDocument").disabled=!p||id===myId;$("chatAudio").disabled=!p||id===myId;
@@ -415,7 +415,7 @@ async function pollIncoming(){
  const undelivered=rows.filter(m=>!m.delivered_at&&m.sender_id!==myId);
  if(undelivered.length){const now=new Date().toISOString();await api("wasel_chat_messages?id=in.("+undelivered.map(m=>m.id).join(",")+")&recipient_id=eq."+encodeURIComponent(myId)+"&delivered_at=is.null",{method:"PATCH",headers:{"Prefer":"return=minimal"},body:JSON.stringify({delivered_at:now})});}
 }
-async function refresh(){if(polling||!currentName())return;polling=true;try{await savePresence();await loadPeople();await pollIncoming();if(selectedId)await loadMessages();status("متصل بالخدمة · تحديث تلقائي.");}catch(e){status("قاعدة البيانات تحتاج تحديث schema.sql في Supabase. "+e.message,true);}finally{polling=false;}}
+async function refresh(){if(polling||!currentName())return;polling=true;try{await savePresence();await loadPeople();await pollIncoming();if(selectedId)await loadMessages();}catch(e){status("قاعدة البيانات تحتاج تحديث schema.sql في Supabase. "+e.message,true);}finally{polling=false;}}
 $("peopleSearch").addEventListener("input",renderPeople);
 $("deleteAccountButton").addEventListener("click",async()=>{
  if(!currentName()){status("لا يوجد حساب نشط لحذفه.",true);return;}
@@ -485,7 +485,27 @@ function showAppLock(){if(autoLockOverlay){autoLockOverlay.hidden=false;return;}
 async function configureAutoLock(){const existing=localStorage.getItem(MASTER_PIN_KEY)||"";const code=prompt(existing?"أدخل رمز التطبيق الحالي لتغيير الإعدادات، أو اكتب إزالة لحذفه:":"أنشئ رمزًا رئيسيًا للتطبيق (4 أرقام على الأقل):");if(code===null)return;if(existing&&code==="إزالة"){localStorage.removeItem(MASTER_PIN_KEY);localStorage.setItem(AUTO_LOCK_KEY,"0");status("تم إيقاف قفل التطبيق التلقائي.");return;}if(existing&&code!=="إزالة"&&await pinHash(code)!==existing){status("الرمز الحالي غير صحيح.",true);return;}const pin=existing||prompt("أكد رمز التطبيق الجديد:");if(!existing&&(!/^\d{4,12}$/.test(code)||code!==pin)){status("استخدم رمزًا رقميًا من 4 إلى 12 رقمًا متطابقًا.",true);return;}if(!existing)localStorage.setItem(MASTER_PIN_KEY,await pinHash(code));const mins=prompt("القفل بعد كم دقيقة من عدم النشاط؟ اكتب 1 أو 5 أو 15 أو 30:","5");if(!["1","5","15","30"].includes(mins||"")){status("لم يتغير المؤقت.",true);return;}localStorage.setItem(AUTO_LOCK_KEY,mins);setupAutoLock();status("تم إعداد القفل التلقائي بعد "+mins+" دقيقة.");}
 function installPrivacyControls(){const menu=$("sidebarMenu");if(!menu||menu.dataset.privacyReady)return;menu.dataset.privacyReady="1";const add=(id,label,fn)=>{const b=document.createElement("button");b.id=id;b.type="button";b.textContent=label;b.addEventListener("click",()=>{menu.hidden=true;fn();});menu.appendChild(b);};add("quickAccountSwitch","تبديل الحسابات",switchLocalAccount);add("autoLockSetup","قفل التطبيق التلقائي",configureAutoLock);add("ghostModeToggle",localStorage.getItem(GHOST_KEY)==="on"?"إيقاف وضع التخفي":"تفعيل وضع التخفي",()=>{const on=localStorage.getItem(GHOST_KEY)!=="on";localStorage.setItem(GHOST_KEY,on?"on":"off");$("ghostModeToggle").textContent=on?"إيقاف وضع التخفي":"تفعيل وضع التخفي";status(on?"تم تفعيل التخفي على هذا الجهاز؛ لن تُحدّث حالة الاتصال أو القراءة.":"تم إيقاف وضع التخفي.");});const chatMenu=$("chatMenu");if(chatMenu&&!chatMenu.querySelector("#chatLockToggle")){const b=document.createElement("button");b.id="chatLockToggle";b.type="button";b.textContent="قفل هذه المحادثة برمز";b.addEventListener("click",()=>{chatMenu.hidden=true;setChatLock();});chatMenu.appendChild(b);}}
 
-function start(){installPrivacyControls();installOfflineQueue();setupExtras();ensureLocalAccount();setupAutoLock();applyTheme(localStorage.getItem(THEME_KEY)||"blue");applyMode(localStorage.getItem(MODE_KEY)||"light");const name=currentName();$("nameSetup").hidden=Boolean(name);$("identity").textContent=name?"أهلاً، "+name:"لم تختر اسمًا بعد";$("setupNotice").hidden=false;$("setupNotice").textContent="يلزم تشغيل schema.sql المحدّث في Supabase لتفعيل الميزات الجديدة."; $("messageText").disabled=true;$("sendMessage").disabled=true;$("chatImage").disabled=true;renderPeople();if(name)refresh();setInterval(refresh,5000);}
+
+function setupMobileNavigation(){
+ const nav=document.querySelector(".mobile-nav");if(!nav||nav.dataset.ready)return;nav.dataset.ready="1";
+ nav.querySelectorAll(".navitem").forEach(button=>button.addEventListener("click",()=>{
+  nav.querySelectorAll(".navitem").forEach(n=>n.classList.toggle("active",n===button));
+  if(button.dataset.view==="people"){document.body.classList.remove("mobile-chat-open");$("peopleSearch").blur();}
+  if(button.dataset.view==="settings"){openProfile();}
+ }));
+}
+function setupMobileKeyboard(){
+ const field=$("messageText"),log=$("chatLog");if(!field||field.dataset.keyboardReady)return;field.dataset.keyboardReady="1";
+ const updateHeight=()=>{if(window.visualViewport&&window.innerWidth<=620){document.documentElement.style.setProperty("--visual-height",Math.round(window.visualViewport.height)+"px");}};
+ const scrollToLatest=()=>{requestAnimationFrame(()=>{updateHeight();log.scrollTop=log.scrollHeight;});};
+ field.addEventListener("focus",()=>{document.body.classList.add("keyboard-open");scrollToLatest();setTimeout(scrollToLatest,180);setTimeout(scrollToLatest,360);});
+ field.addEventListener("blur",()=>document.body.classList.remove("keyboard-open"));
+ field.addEventListener("input",()=>{field.style.height="auto";field.style.height=Math.min(field.scrollHeight,100)+"px";});
+ if(window.visualViewport){window.visualViewport.addEventListener("resize",()=>{updateHeight();if(document.activeElement===field)scrollToLatest();});window.visualViewport.addEventListener("scroll",updateHeight);}
+ window.addEventListener("orientationchange",updateHeight);updateHeight();
+}
+
+function start(){setupMobileNavigation();setupMobileKeyboard();installPrivacyControls();installOfflineQueue();setupExtras();ensureLocalAccount();setupAutoLock();applyTheme(localStorage.getItem(THEME_KEY)||"blue");applyMode(localStorage.getItem(MODE_KEY)||"light");const name=currentName();$("nameSetup").hidden=Boolean(name);$("identity").textContent=name?"أهلاً، "+name:"لم تختر اسمًا بعد";$("setupNotice").hidden=true;$("setupNotice").textContent=""; $("messageText").disabled=true;$("sendMessage").disabled=true;$("chatImage").disabled=true;renderPeople();if(name)refresh();setInterval(refresh,5000);}
 start();
 if("serviceWorker"in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(()=>{}));
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&selectedId)loadMessages().catch(()=>{});});
