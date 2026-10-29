@@ -175,3 +175,9 @@ create policy "Wasel public messages update" on public.wasel_chat_messages
   for update to anon using (room_id = 'wasel-friends') with check (room_id = 'wasel-friends');
 grant select, insert, update on public.wasel_chat_messages to anon;
 grant select, insert, update on public.wasel_chat_people to anon;
+
+
+-- One-time-view image support (client-enforced MVP; not DRM or end-to-end encryption).
+alter table public.wasel_chat_messages add column if not exists view_once boolean not null default false;
+alter table public.wasel_chat_messages add column if not exists viewed_at timestamptz;
+create index if not exists wasel_chat_messages_view_once_idx on public.wasel_chat_messages(id) where view_once = true;
