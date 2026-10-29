@@ -1,6 +1,6 @@
-# Wasel — private messaging MVP
+# Seif Messages — private messaging MVP
 
-واجهة عربية بسيطة للدردشة بين مستخدمين عبر الإنترنت باستخدام GitHub Pages وSupabase. التركيز الحالي هو الرسائل النصية والصور والرسائل الصوتية المسجلة؛ **المكالمات الصوتية مؤجلة ولم تُنفّذ بعد**.
+واجهة عربية بسيطة للدردشة عبر الإنترنت باسم Seif Messages باستخدام GitHub Pages وSupabase. التركيز الحالي هو الرسائل النصية والصور والرسائل الصوتية المسجلة؛ **المكالمات الصوتية مؤجلة ولم تُنفّذ بعد**.
 
 ## ما الذي يدعمه الكود الحالي؟
 - تسجيل دخول مجهول عبر Supabase، مع ملف مستخدم تلقائي.
@@ -21,7 +21,7 @@
 7. انشر تغييرات `main` عبر GitHub Pages: Settings > Pages > Deploy from a branch > `main` > `/(root)`.
 
 الرابط المتوقع بعد تفعيل GitHub Pages:
-https://seifjaballah77-eng.github.io/wasel-social/
+https://seifjaballah77-eng.github.io/wasel-social/ (اسم المستودع والرابط لم يتغيرا)
 
 ## اختبار فعلي بين بلدين/جهازين
 1. افتح الرابط في متصفحك وانتظر ظهور معرّف حسابك.
