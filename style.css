@@ -585,3 +585,12 @@ button .ui-icon,.attach-option .ui-icon,.searchbox .ui-icon{pointer-events:none}
 .voice-message-player{display:block;width:min(100%,320px);min-width:220px;margin:6px 0;border-radius:22px;}
 #sendMessage.recording{background:#c62828;color:#fff;animation:voicePulse 1.2s ease-in-out infinite alternate}
 @keyframes voicePulse{from{opacity:1}to{opacity:.72}}
+
+
+/* Small destructive action in profile settings only. */
+.delete-account-area{display:flex;flex-direction:column;align-items:flex-start;gap:5px;margin-top:18px;padding-top:12px;border-top:1px solid var(--border-color,#e5e7eb)}
+.delete-account-button{width:auto!important;min-width:0!important;padding:5px 9px!important;border:1px solid #dc2626!important;border-radius:7px!important;background:#fff1f2!important;color:#b91c1c!important;box-shadow:none!important;font:inherit!important;font-size:11px!important;line-height:1.4!important;cursor:pointer!important}
+.delete-account-button:hover{background:#fee2e2!important}
+.delete-account-area small{font-size:10px;color:#b91c1c;line-height:1.5}
+:root[data-mode="dark"] .delete-account-button{background:#35191d!important;color:#fca5a5!important;border-color:#ef4444!important}
+:root[data-mode="dark"] .delete-account-area{border-color:#3b4650}
