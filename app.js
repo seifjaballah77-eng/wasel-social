@@ -403,7 +403,7 @@ document.querySelectorAll(".navitem").forEach(b=>b.addEventListener("click",()=>
 function openNameSetup(){$("displayNameInput").value=currentName();$("nameSetupError").hidden=true;$("nameSetup").hidden=false;$("displayNameInput").focus();}
 let incomingInitialized=false;
 async function pollIncoming(){
- let rows=await api("wasel_chat_messages?select=id,sender_id,sender_name,body,image_data,created_at,delivered_at&recipient_id=eq."+encodeURIComponent(myId)+"&room_id=eq."+ROOM+"&order=created_at.desc&limit=100");if(myId===DOTS_ACCOUNT_ID)rows=rows.filter(m=>m.sender_id===SEIF_ARABIC_ID);
+ let rows=await api("wasel_chat_messages?select=id,sender_id,sender_name,body,image_data,created_at,delivered_at&recipient_id=eq."+encodeURIComponent(myId)+"&room_id=eq."+ROOM+"&order=created_at.desc&limit=100");if(myId===DOTS_ACCOUNT_ID||myId===ROUA_ID)rows=rows.filter(m=>m.sender_id===(myId===DOTS_ACCOUNT_ID?ROUA_ID:DOTS_ACCOUNT_ID));
  const callRows=rows.filter(m=>(m.body||"").startsWith(CALL_OFFER_PREFIX)&&m.sender_id!==myId);
  for(const m of callRows){
   const bits=m.body.split("|");if(bits[2]!=="ringing"||handledCallOffers.has(String(m.id)))continue;
