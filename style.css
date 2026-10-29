@@ -389,3 +389,77 @@ footer{color:#667781}.image-viewer{touch-action:pan-x pan-y pinch-zoom}.image-vi
 .messageform button:not(.has-text){background:linear-gradient(135deg,#1a3449,#172340);border:1px solid rgba(57,245,255,.3);color:#70f5ff}
 .messageform button.has-text{background:linear-gradient(135deg,#39f5ff,#00a884);color:#06131b}
 @media(max-width:620px){.sidehead{padding:12px 12px 10px}.sidebar-head-actions{gap:2px}.sidebar-icon{width:29px;height:29px}.people-count{min-width:25px;padding:3px 6px}.person{min-width:210px}}
+
+
+/* Global theme engine: all surfaces consume the same root variables */
+:root{
+  color-scheme:light;
+  --bg-main:#efeae2;
+  --bg-sidebar:#ffffff;
+  --bg-chat:#efeae2;
+  --bg-header:#ffffff;
+  --bg-input:#ffffff;
+  --bg-hover:#f5f6f6;
+  --text-primary:#111b21;
+  --text-secondary:#667781;
+  --border-color:#e5e9ec;
+  --bubble-sent:#d9fdd3;
+  --bubble-received:#ffffff;
+  --accent:#00a884;
+  --accent-contrast:#ffffff;
+  --accent-soft:#e0f2ed;
+  --accent-glow:rgba(0,168,132,.18);
+}
+:root[data-mode="dark"]{
+  color-scheme:dark;
+  --bg-main:#0b141a;
+  --bg-sidebar:#111b21;
+  --bg-chat:#0a1014;
+  --bg-header:#111b21;
+  --bg-input:#202c33;
+  --bg-hover:#202c33;
+  --text-primary:#e9edef;
+  --text-secondary:#8696a0;
+  --border-color:#2a3942;
+  --bubble-sent:#005c4b;
+  --bubble-received:#202c33;
+  --accent-contrast:#ffffff;
+  --accent-soft:rgba(255,255,255,.08);
+  --accent-glow:rgba(0,0,0,.16);
+}
+:root[data-theme="blue"]{--accent:#2878d0;--accent-soft:#e6f1ff;--accent-glow:rgba(40,120,208,.2);--bubble-sent:#d8eaff}
+:root[data-theme="purple"]{--accent:#8153d7;--accent-soft:#f0e8ff;--accent-glow:rgba(129,83,215,.2);--bubble-sent:#eadfff}
+:root[data-theme="green"]{--accent:#00a884;--accent-soft:#d9fdd3;--accent-glow:rgba(0,168,132,.2);--bubble-sent:#d9fdd3}
+:root[data-mode="dark"][data-theme="blue"]{--accent:#5ba6ff;--accent-soft:rgba(91,166,255,.13);--bubble-sent:#174b75}
+:root[data-mode="dark"][data-theme="purple"]{--accent:#c2a0ff;--accent-soft:rgba(194,160,255,.13);--bubble-sent:#49336b}
+:root[data-mode="dark"][data-theme="green"]{--accent:#42d9b0;--accent-soft:rgba(66,217,176,.12);--bubble-sent:#005c4b}
+/* Apply variables globally, including overlays, forms, navigation and panels */
+html,body{background:var(--bg-main);color:var(--text-primary)}
+.topbar,.chathead,.composerwrap,.mobile-nav,.namecard,.modal-card,.sidebar-menu,.chat-menu{background:var(--bg-header);color:var(--text-primary);border-color:var(--border-color)}
+.panel,.sidebar,.chat{background:var(--bg-sidebar);color:var(--text-primary);border-color:var(--border-color)}
+.sidehead h1,.chatperson h2,.welcome h3,.brand,.person,.identity,.namecard h2,.modal-card h2{color:var(--text-primary)}
+.brand small,.eyebrow,.chatperson p,.personmeta small,.person-time,.person-preview,.composerhint,.privacyhint,footer,.sidefoot,.welcome,.statusline{color:var(--text-secondary)}
+.chatlog{background:var(--bg-chat);color:var(--text-primary)}
+.searchbox,.messageform input,.namecard input,.modal-card input,.modal-card textarea,.modal-card select{background:var(--bg-input);color:var(--text-primary);border-color:var(--border-color)}
+.searchbox input,.messageform input{color:var(--text-primary)}
+.person:hover,.person.active,.sidebar-menu button:hover{background:var(--bg-hover);border-color:var(--border-color)}
+.bubble:not(.mine){background:var(--bubble-received);color:var(--text-primary);border-color:var(--border-color)}
+.bubble.mine{background:var(--bubble-sent);color:var(--text-primary);border-color:var(--border-color)}
+.bubble .stamp,.mine .stamp{color:var(--text-secondary)}
+.messageform button,.namecard button,.primary-button,.mode-toggle,.navitem.active,.people-count,.toolbutton,.sidebar-icon,.head-icon,.side-action,.editname{border-color:var(--accent);color:var(--accent)}
+.messageform button,.namecard button,.primary-button{background:var(--accent);color:var(--accent-contrast);box-shadow:0 4px 14px var(--accent-glow)}
+.messageform button.has-text{background:var(--accent);color:var(--accent-contrast)}
+.messageform button:not(.has-text){background:var(--bg-input);color:var(--accent);border:1px solid var(--accent)}
+.people-count,.toolbutton,.sidebar-icon,.head-icon,.side-action,.editname,.mode-toggle{background:var(--accent-soft);color:var(--accent)}
+.navitem{color:var(--text-secondary)}
+.navitem.active span{background:var(--accent-soft)}
+.avatar,.welcomeicon,.brandmark{background:var(--accent-soft);color:var(--accent);border-color:var(--border-color)}
+.nameoverlay,.modal-overlay{background:color-mix(in srgb,var(--bg-main) 78%,transparent)}
+.namecard{border-color:var(--border-color)}
+.namecard p,.namecard label,.namecard small{color:var(--text-secondary)}
+.setupnotice{background:var(--accent-soft);border-color:var(--border-color);color:var(--text-primary)}
+.sidebar-menu button,.chat-menu button{color:var(--text-primary)}
+.person-ticks,.read-receipt.is-read{color:var(--accent)}
+.bubble.mine:after{background:var(--bubble-sent)}
+.bubble:not(.mine):after{background:var(--bubble-received)}
+@media(prefers-reduced-motion:no-preference){html,body,.panel,.chatlog,.bubble,.messageform input,.messageform button{transition:background-color .18s ease,color .18s ease,border-color .18s ease}}
