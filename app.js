@@ -4,7 +4,7 @@ const $ = id => document.getElementById(id);
 const SUPABASE_URL = "https://qlcrvffejuscbftjotmp.supabase.co";
 const SUPABASE_KEY = "sb_publishable_nY14ZzU_YiOfBrySQlBuFA_G-jg2VOc";
 const ROOM = "wasel-friends", PROFILE_KEY = "wasel-personal-name-v1", ID_KEY = "wasel-chat-user-id-v1";
-const PHOTO_KEY = "wasel-chat-photo-v1", SOUND_KEY = "wasel-chat-sound-v1", NOTIFY_KEY = "wasel-chat-notify-v1";
+const PHOTO_KEY = "wasel-chat-photo-v1", SOUND_KEY = "wasel-chat-sound-v1", NOTIFY_KEY = "wasel-chat-notify-v1", BIO_KEY = "wasel-chat-bio-v1", FAVORITES_KEY = "wasel-chat-favorites-v1", THEME_KEY = "wasel-chat-theme-v1";
 const API = SUPABASE_URL + "/rest/v1/";
 const myId = localStorage.getItem(ID_KEY) || crypto.randomUUID();
 localStorage.setItem(ID_KEY,myId);
@@ -24,14 +24,11 @@ async function api(path,options={}){
 }
 function setupExtras(){
  const tools=document.querySelector(".composer-tools");
- if(!$("profilePhotoButton")){
-  const photo=document.createElement("label");photo.id="profilePhotoButton";photo.className="toolbutton extra-tool";photo.textContent="♙ الصورة الشخصية";
-  const input=document.createElement("input");input.type="file";input.accept="image/jpeg,image/png,image/webp";input.hidden=true;input.id="profilePhotoInput";
-  input.addEventListener("change",()=>{if(input.files?.[0])savePhoto(input.files[0]);input.value="";});photo.appendChild(input);tools.appendChild(photo);
+ if(!$("emojiPicker")){
+  const b=document.createElement("button");b.type="button";b.id="emojiPicker";b.className="attach-button emoji-trigger";b.textContent="😊";b.title="إضافة إيموجي";b.setAttribute("aria-label","إضافة إيموجي");
+  b.addEventListener("click",()=>{let panel=$("emojiPanel");if(panel){panel.remove();return;}panel=document.createElement("div");panel.id="emojiPanel";panel.className="emoji-panel";"😀 😃 😄 😁 😂 🥹 😊 😍 🥰 😎 🤔 😢 😭 😡 👍 👎 👏 🙌 ❤️ 💙 🔥 🎉 🙏".split(" ").forEach(e=>{const x=document.createElement("button");x.type="button";x.textContent=e;x.addEventListener("click",()=>{$("messageText").value += e;$("messageText").focus();});panel.appendChild(x);});tools.insertAdjacentElement("afterend",panel);});
+  tools.appendChild(b);
  }
- if(!$("soundToggle")){const b=document.createElement("button");b.type="button";b.id="soundToggle";b.className="toolbutton extra-tool";b.textContent=localStorage.getItem(SOUND_KEY)==="off"?"🔇 الصوت":"🔊 الصوت";b.addEventListener("click",()=>{const off=localStorage.getItem(SOUND_KEY)!=="off";localStorage.setItem(SOUND_KEY,off?"off":"on");b.textContent=off?"🔇 الصوت":"🔊 الصوت";status(off?"تم إيقاف أصوات الرسائل":"تم تشغيل أصوات الرسائل");});tools.appendChild(b);}
- if(!$("notifyToggle")){const b=document.createElement("button");b.type="button";b.id="notifyToggle";b.className="toolbutton extra-tool";b.textContent="🔔 الإشعارات";b.addEventListener("click",enableNotifications);tools.appendChild(b);}
- if(!$("emojiPicker")){const b=document.createElement("button");b.type="button";b.id="emojiPicker";b.className="toolbutton extra-tool";b.textContent="😊 إيموجي";b.addEventListener("click",()=>{let panel=$("emojiPanel");if(panel){panel.remove();return;}panel=document.createElement("div");panel.id="emojiPanel";panel.className="emoji-panel";"😀 😃 😄 😁 😂 🥹 😊 😍 🥰 😎 🤔 😢 😭 😡 👍 👎 👏 🙌 ❤️ 💙 🔥 🎉 🙏".split(" ").forEach(e=>{const x=document.createElement("button");x.type="button";x.textContent=e;x.addEventListener("click",()=>{$("messageText").value += e;$("messageText").focus();});panel.appendChild(x);});b.parentElement.insertAdjacentElement("afterend",panel);});tools.appendChild(b);}
  const form=$("messageForm");if(!$("replyPreview")){const p=document.createElement("div");p.id="replyPreview";p.className="reply-preview";p.hidden=true;const label=document.createElement("span");label.id="replyPreviewText";p.appendChild(label);const cancel=document.createElement("button");cancel.type="button";cancel.textContent="×";cancel.setAttribute("aria-label","إلغاء الرد");cancel.addEventListener("click",clearReply);p.appendChild(cancel);form.parentElement.insertBefore(p,form);}
 }
 function playSound(){if(localStorage.getItem(SOUND_KEY)==="off")return;try{const C=window.AudioContext||window.webkitAudioContext;if(!C)return;const c=new C(),o=c.createOscillator(),g=c.createGain();o.type="sine";o.frequency.value=740;g.gain.setValueAtTime(.0001,c.currentTime);g.gain.exponentialRampToValueAtTime(.08,c.currentTime+.015);g.gain.exponentialRampToValueAtTime(.0001,c.currentTime+.16);o.connect(g);g.connect(c.destination);o.start();o.stop(c.currentTime+.17);o.onended=()=>c.close();}catch(e){}}
@@ -50,8 +47,8 @@ async function loadPeople(){
  renderPeople();
 }
 function renderPeople(){
- const root=$("people");root.replaceChildren();const query=$("peopleSearch").value.trim().toLocaleLowerCase(),now=Date.now();
- const matches=people.filter(p=>(p.display_name||"").toLocaleLowerCase().includes(query));$("peopleCount").textContent=String(matches.length);
+ const root=$("people");root.replaceChildren();const query=$("peopleSearch").value.trim().toLocaleLowerCase(),now=Date.now(),favorites=JSON.parse(localStorage.getItem(FAVORITES_KEY)||"[]"),onlyFavorites=$("favoritesToggle")?.getAttribute("aria-pressed")==="true";
+ const matches=people.filter(p=>(p.display_name||"").toLocaleLowerCase().includes(query)&&(!onlyFavorites||favorites.includes(p.user_id)));$("peopleCount").textContent=String(matches.length);
  if(!matches.length){const e=document.createElement("div");e.className="empty";e.textContent=query?"لا يوجد شخص بهذا الاسم. تأكد أن صديقك فتح الموقع وكتب اسمه.":"لا يوجد أشخاص بعد. افتح الموقع واكتب اسمك.";root.appendChild(e);}
  for(const p of matches){
   const online=now-new Date(p.last_seen).getTime()<90000,b=document.createElement("button");b.type="button";b.className="person"+(p.user_id===selectedId?" active":"");
@@ -59,7 +56,7 @@ function renderPeople(){
   const meta=document.createElement("span");meta.className="personmeta";const strong=document.createElement("strong");strong.textContent=(p.display_name||"مستخدم")+(p.user_id===myId?" (أنت)":"");
   const small=document.createElement("small");small.className="personstatus";const dot=document.createElement("i");dot.className="dot "+(online?"online":"offline");dot.setAttribute("aria-label",online?"متصل":"غير متصل");dot.title=online?"متصل الآن":"غير متصل";const label=document.createElement("span");label.className=online?"online":"offline";label.textContent=p.user_id!==myId&&p.is_typing&&p.typing_to===myId?"يكتب الآن…":online?"متصل الآن":"غير متصل · آخر ظهور: "+timeLabel(p.last_seen);small.append(dot,label);meta.append(strong,small);b.append(av,meta);
   if(unreadCounts[p.user_id]){const badge=document.createElement("span");badge.className="unread-badge";badge.textContent=unreadCounts[p.user_id]>99?"99+":String(unreadCounts[p.user_id]);b.appendChild(badge);}
-  b.addEventListener("click",()=>selectPerson(p.user_id));root.appendChild(b);
+  b.addEventListener("click",()=>selectPerson(p.user_id));const star=document.createElement("button");star.type="button";star.className="favorite-star"+(favorites.includes(p.user_id)?" is-favorite":"");star.textContent=favorites.includes(p.user_id)?"★":"☆";star.title=favorites.includes(p.user_id)?"إزالة من المفضّلين":"إضافة إلى المفضّلين";star.setAttribute("aria-label",star.title);star.addEventListener("click",e=>{e.stopPropagation();const list=JSON.parse(localStorage.getItem(FAVORITES_KEY)||"[]");const next=list.includes(p.user_id)?list.filter(x=>x!==p.user_id):[...list,p.user_id];localStorage.setItem(FAVORITES_KEY,JSON.stringify(next));renderPeople();});b.appendChild(star);root.appendChild(b);
  }
 }
 async function selectPerson(id){
@@ -93,11 +90,11 @@ function renderMessages(){
   const bubble=document.createElement("div");bubble.className="bubble "+(m.sender_id===myId?"mine":"")+(m.deleted_at?" deleted":"");
   if(m.reply_to){const original=byId.get(String(m.reply_to));const q=document.createElement("div");q.className="quoted-message";q.textContent="↪ "+(original?(original.deleted_at?"تم حذف الرسالة":original.body||"صورة"):"رسالة سابقة");bubble.appendChild(q);}
   if(m.deleted_at){const gone=document.createElement("div");gone.className="deleted-text";gone.textContent="تم حذف هذه الرسالة";bubble.appendChild(gone);}
-  else {if(m.image_data){const img=document.createElement("img");img.alt="صورة مرسلة";img.loading="lazy";img.src=m.image_data;img.style.maxWidth="100%";img.style.borderRadius="12px";bubble.appendChild(img);}if(m.body){const body=document.createElement("div");body.textContent=m.body;bubble.appendChild(body);}}
+  else {if(m.image_data){const img=document.createElement("img");img.alt="صورة مرسلة — اضغط للتكبير";img.loading="lazy";img.src=m.image_data;img.style.maxWidth="100%";img.style.borderRadius="12px";img.tabIndex=0;img.role="button";img.addEventListener("click",()=>openImageViewer(m.image_data));img.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();openImageViewer(m.image_data);}});bubble.appendChild(img);}if(m.body){const body=document.createElement("div");body.textContent=m.body;bubble.appendChild(body);}}
   const reacts=document.createElement("div");reacts.className="reaction-row";const reactions=m.reactions&&typeof m.reactions==="object"?m.reactions:{};Object.entries(reactions).forEach(([emoji,ids])=>{const count=Array.isArray(ids)?ids.length:Number(ids)||0;if(count){const r=document.createElement("button");r.type="button";r.className="reaction-chip";r.textContent=emoji+" "+count;r.addEventListener("click",()=>toggleReaction(m,emoji));reacts.appendChild(r);}});bubble.appendChild(reacts);
   const actions=document.createElement("div");actions.className="message-actions";const reply=document.createElement("button");reply.type="button";reply.textContent="↩ رد";reply.addEventListener("click",()=>setReply(m));actions.appendChild(reply);
   for(const emoji of ["👍","❤️","😂","🔥","👏"]){const react=document.createElement("button");react.type="button";react.textContent=emoji;react.setAttribute("aria-label","تفاعل "+emoji);react.addEventListener("click",()=>toggleReaction(m,emoji));actions.appendChild(react);}
-  if(m.sender_id===myId&&!m.deleted_at){const del=document.createElement("button");del.type="button";del.textContent="حذف";del.addEventListener("click",()=>deleteMessage(m));actions.appendChild(del);}bubble.appendChild(actions);
+  if(m.sender_id===myId&&!m.deleted_at){if(m.body){const edit=document.createElement("button");edit.type="button";edit.textContent="تعديل";edit.addEventListener("click",()=>editMessage(m));actions.appendChild(edit);}const del=document.createElement("button");del.type="button";del.textContent="حذف";del.addEventListener("click",()=>deleteMessage(m));actions.appendChild(del);}bubble.appendChild(actions);
   const stamp=document.createElement("span");stamp.className="stamp";stamp.textContent=(m.sender_id===myId?"أنت":m.sender_name||"صديقك")+" · "+timeLabel(m.created_at);
   if(m.sender_id===myId){const receipt=document.createElement("span");receipt.className="read-receipt"+(m.read_at?" is-read":"");receipt.textContent=m.read_at?" ✓✓":m.delivered_at?" ✓✓":" ✓";receipt.title=m.read_at?"تمت القراءة":m.delivered_at?"تم التسليم":"تم الإرسال";stamp.appendChild(receipt);}
   bubble.appendChild(stamp);log.appendChild(bubble);
@@ -105,6 +102,23 @@ function renderMessages(){
  log.scrollTop=log.scrollHeight;
 }
 async function toggleReaction(m,emoji){const old=m.reactions&&typeof m.reactions==="object"?{...m.reactions}:{};let ids=Array.isArray(old[emoji])?old[emoji].slice():[];ids=ids.includes(myId)?ids.filter(x=>x!==myId):[...ids,myId];if(ids.length)old[emoji]=ids;else delete old[emoji];try{await api("wasel_chat_messages?id=eq."+m.id+"&room_id=eq."+ROOM,{method:"PATCH",headers:{"Prefer":"return=minimal"},body:JSON.stringify({reactions:old})});m.reactions=old;lastSignature="";renderMessages();}catch(e){status("تعذر حفظ التفاعل. تحقق من تشغيل schema.sql.",true);}}
+async function editMessage(m){
+ const next=prompt("عدّل نص الرسالة:",m.body||"");if(next===null)return;const body=next.trim();if(!body){status("لا يمكن حفظ رسالة فارغة؛ احذفها بدلًا من ذلك.",true);return;}if(body.length>2000){status("الحد الأقصى 2000 حرف.",true);return;}try{await api("wasel_chat_messages?id=eq."+m.id+"&sender_id=eq."+encodeURIComponent(myId),{method:"PATCH",headers:{"Prefer":"return=minimal"},body:JSON.stringify({body})});m.body=body;lastSignature="";status("تم تحديث نص الرسالة.");await loadMessages();}catch(e){status("تعذر تعديل الرسالة؛ تحقق من صلاحيات UPDATE في Supabase. "+e.message,true);}
+}
+function openImageViewer(src){$("imageViewerImage").src=src;$("imageViewer").hidden=false;}
+function closeImageViewer(){$("imageViewer").hidden=true;$("imageViewerImage").removeAttribute("src");}
+function openProfile(){
+ $("profileNameInput").value=currentName();
+ $("profileBioInput").value=localStorage.getItem(BIO_KEY)||"";
+ $("profileAvatarPreview").replaceChildren();
+ if(currentPhoto()){const img=document.createElement("img");img.src=currentPhoto();img.alt="صورتك الشخصية";$("profileAvatarPreview").appendChild(img);}else $("profileAvatarPreview").textContent=initials(currentName());
+ $("themeSelect").value=localStorage.getItem(THEME_KEY)||"blue";
+ $("soundSetting").checked=localStorage.getItem(SOUND_KEY)!=="off";
+ $("notifySetting").checked=localStorage.getItem(NOTIFY_KEY)==="on";
+ $("profileError").hidden=true;$("profileModal").hidden=false;
+}
+function applyTheme(theme){document.documentElement.dataset.theme=theme;localStorage.setItem(THEME_KEY,theme);}
+async function saveProfilePhoto(file){if(!file)return;if(!["image/jpeg","image/png","image/webp"].includes(file.type)||file.size>100*1024){$("profileError").textContent="اختر صورة JPG أو PNG أو WEBP بحجم لا يتجاوز 100KB.";$("profileError").hidden=false;return;}const reader=new FileReader();reader.onload=async()=>{localStorage.setItem(PHOTO_KEY,String(reader.result));$("profileAvatarPreview").replaceChildren();const img=document.createElement("img");img.src=String(reader.result);img.alt="صورتك الشخصية";$("profileAvatarPreview").appendChild(img);try{await api("wasel_chat_people?user_id=eq."+encodeURIComponent(myId),{method:"PATCH",headers:{"Prefer":"return=minimal"},body:JSON.stringify({avatar_data:String(reader.result)})});await loadPeople();}catch(e){status("الصورة محفوظة على هذا الجهاز، لكن لم يتأكد حفظها على الخادم: "+e.message,true);}};reader.readAsDataURL(file);}
 async function deleteMessage(m){if(!confirm("حذف هذه الرسالة من المحادثة؟"))return;try{await api("wasel_chat_messages?id=eq."+m.id+"&sender_id=eq."+encodeURIComponent(myId),{method:"PATCH",headers:{"Prefer":"return=minimal"},body:JSON.stringify({deleted_at:new Date().toISOString(),})});status("تم وضع علامة الحذف على الرسالة.");await loadMessages();}catch(e){status("تعذر حذف الرسالة. تحقق من تحديث قاعدة البيانات.",true);}}
 async function sendText(){
  const field=$("messageText"),body=field.value.trim();if(!body||!selectedId||selectedId===myId)return;
@@ -118,6 +132,7 @@ async function sendImage(file){
 async function setTyping(on){if(!currentName()||!selectedId||selectedId===myId)return;try{await api("wasel_chat_people?user_id=eq."+encodeURIComponent(myId),{method:"PATCH",headers:{"Prefer":"return=minimal"},body:JSON.stringify({is_typing:on,typing_to:on?selectedId:null,last_seen:new Date().toISOString()})});}catch(e){}}
 function mobileBack(){document.body.classList.remove("mobile-chat-open");document.querySelectorAll(".navitem").forEach(n=>n.classList.toggle("active",n.dataset.view==="people"));}
 $("mobileBack").addEventListener("click",mobileBack);
+$("profileOpen").addEventListener("click",openProfile);$("editName").addEventListener("click",openProfile);$("profileClose").addEventListener("click",()=>$("profileModal").hidden=true);$("imageViewerClose").addEventListener("click",closeImageViewer);$("imageViewer").addEventListener("click",e=>{if(e.target===$("imageViewer"))closeImageViewer();});$("profilePhotoInput").addEventListener("change",e=>{if(e.target.files?.[0])saveProfilePhoto(e.target.files[0]);e.target.value="";});$("favoritesToggle").addEventListener("click",()=>{const active=$("favoritesToggle").getAttribute("aria-pressed")!=="true";$("favoritesToggle").setAttribute("aria-pressed",String(active));$("favoritesToggle").textContent=active?"★ عرض الكل":"☆ المفضّلون";renderPeople();});$("themeSelect").addEventListener("change",e=>applyTheme(e.target.value));
 document.querySelectorAll(".navitem").forEach(b=>b.addEventListener("click",()=>{const v=b.dataset.view;document.querySelectorAll(".navitem").forEach(n=>n.classList.toggle("active",n===b));if(v==="settings"){openNameSetup();return;}if(v==="people"||v==="chats"){document.body.classList.remove("mobile-chat-open");if(v==="chats"){$("peopleSearch").value="";renderPeople();}else $("peopleSearch").focus({preventScroll:true});}}));
 function openNameSetup(){$("displayNameInput").value=currentName();$("nameSetupError").hidden=true;$("nameSetup").hidden=false;$("displayNameInput").focus();}
 let incomingInitialized=false;
@@ -130,13 +145,14 @@ async function pollIncoming(){
  if(undelivered.length){const now=new Date().toISOString();await api("wasel_chat_messages?id=in.("+undelivered.map(m=>m.id).join(",")+")&recipient_id=eq."+encodeURIComponent(myId)+"&delivered_at=is.null",{method:"PATCH",headers:{"Prefer":"return=minimal"},body:JSON.stringify({delivered_at:now})});}
 }
 async function refresh(){if(polling||!currentName())return;polling=true;try{await savePresence();await loadPeople();await pollIncoming();if(selectedId)await loadMessages();status("متصل بالخدمة · تحديث تلقائي.");}catch(e){status("قاعدة البيانات تحتاج تحديث schema.sql في Supabase. "+e.message,true);}finally{polling=false;}}
-$("peopleSearch").addEventListener("input",renderPeople);$("editName").addEventListener("click",openNameSetup);
+$("peopleSearch").addEventListener("input",renderPeople);
+$("profileForm").addEventListener("submit",async event=>{event.preventDefault();const name=$("profileNameInput").value.trim();if(name.length<2){$("profileError").textContent="اكتب اسمًا من حرفين على الأقل.";$("profileError").hidden=false;return;}const changed=name!==currentName();localStorage.setItem(PROFILE_KEY,name.slice(0,30));localStorage.setItem(BIO_KEY,$("profileBioInput").value.trim().slice(0,120));localStorage.setItem(SOUND_KEY,$("soundSetting").checked?"on":"off");if($("notifySetting").checked){await enableNotifications();}else{localStorage.setItem(NOTIFY_KEY,"off");}applyTheme($("themeSelect").value);$("identity").textContent="أهلاً، "+name;$("profileModal").hidden=true;try{await savePresence();await loadPeople();}catch(e){status("حُفظت التعديلات محليًا لكن تعذر تحديث الملف على الخادم: "+e.message,true);}if(changed&&selectedId){const p=people.find(x=>x.user_id===selectedId);if(p)$("chatTitle").textContent=p.display_name;}renderPeople();});
 $("nameSetupForm").addEventListener("submit",async event=>{event.preventDefault();const name=$("displayNameInput").value.trim();if(name.length<2){$("nameSetupError").textContent="اكتب اسمًا من حرفين على الأقل.";$("nameSetupError").hidden=false;return;}localStorage.setItem(PROFILE_KEY,name.slice(0,30));$("nameSetup").hidden=true;$("identity").textContent="أهلاً، "+name;$("messageText").disabled=true;$("sendMessage").disabled=true;$("chatImage").disabled=true;$("setupNotice").hidden=false;$("setupNotice").textContent="اختر اسم صديقك من القائمة. يجب أن يفتح صديقك الموقع ويكتب اسمه أيضًا.";selectedId=null;lastSignature="";renderMessages();renderPeople();await refresh();});
 $("messageForm").addEventListener("submit",e=>{e.preventDefault();sendText();});
 $("chatImage").addEventListener("change",e=>{const f=e.target.files&&e.target.files[0];if(f)sendImage(f);e.target.value="";});
 $("messageText").addEventListener("input",()=>{setTyping(true);clearTimeout(typingTimer);typingTimer=setTimeout(()=>setTyping(false),1800);});
 $("messageText").addEventListener("blur",()=>setTyping(false));
-function start(){setupExtras();const name=currentName();$("nameSetup").hidden=Boolean(name);$("identity").textContent=name?"أهلاً، "+name:"لم تختر اسمًا بعد";$("setupNotice").hidden=false;$("setupNotice").textContent="يلزم تشغيل schema.sql المحدّث في Supabase لتفعيل الميزات الجديدة."; $("messageText").disabled=true;$("sendMessage").disabled=true;$("chatImage").disabled=true;renderPeople();if(name)refresh();setInterval(refresh,5000);}
+function start(){setupExtras();applyTheme(localStorage.getItem(THEME_KEY)||"blue");const name=currentName();$("nameSetup").hidden=Boolean(name);$("identity").textContent=name?"أهلاً، "+name:"لم تختر اسمًا بعد";$("setupNotice").hidden=false;$("setupNotice").textContent="يلزم تشغيل schema.sql المحدّث في Supabase لتفعيل الميزات الجديدة."; $("messageText").disabled=true;$("sendMessage").disabled=true;$("chatImage").disabled=true;renderPeople();if(name)refresh();setInterval(refresh,5000);}
 start();
 if("serviceWorker"in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(()=>{}));
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&selectedId)loadMessages().catch(()=>{});});
