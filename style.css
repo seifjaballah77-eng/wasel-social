@@ -193,3 +193,7 @@ body{min-width:320px;overflow-x:hidden}
 .deleted-text{font-style:italic;opacity:.7}
 .bubble.deleted{opacity:.8}
 @media(max-width:620px){.composer-tools{gap:6px}.extra-tool{min-height:35px;padding:6px 8px}.message-actions{opacity:1}.message-actions button{padding:5px 8px;min-height:28px}.unread-badge{min-width:24px;height:24px}}
+
+/* Explicit online/offline indicator colors */
+.personstatus .dot.online{background:#22c55e;box-shadow:0 0 0 3px #22c55e24,0 0 9px #22c55e66}
+.personstatus .dot.offline{background:#ef4444;box-shadow:0 0 0 3px #ef444424,0 0 8px #ef444455}
