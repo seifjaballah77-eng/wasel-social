@@ -568,3 +568,16 @@ button .ui-icon,.attach-option .ui-icon,.searchbox .ui-icon{pointer-events:none}
   :root[data-mode="dark"] .personmeta strong{font-size:13px}
   :root[data-mode="dark"] .person-preview{font-size:11px}
 }
+
+/* Offline queue: clear connection state and editable pending text messages. */
+.offline-queue-banner{position:relative;z-index:20;display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;padding:9px 14px;background:#fff3cd;color:#664d03;border-bottom:1px solid #e6cf83;font-size:13px;text-align:center}
+.offline-queue-banner[hidden]{display:none}
+.offline-queue-banner button{border:0;border-radius:8px;padding:5px 10px;background:#664d03;color:#fff;font:inherit;cursor:pointer}
+.pending-bubble{border:1px dashed #d6a23b!important;opacity:.94}
+.pending-bubble .stamp{color:#9a6b13!important}
+.pending-actions{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.pending-actions button{border:1px solid #cbd5df;border-radius:7px;background:transparent;color:inherit;padding:5px 9px;font:inherit;font-size:12px;cursor:pointer}
+.pending-actions button:disabled{opacity:.45;cursor:not-allowed}
+:root[data-mode="dark"] .offline-queue-banner{background:#3b321c;color:#ffe8a1;border-color:#66562a}
+:root[data-mode="dark"] .offline-queue-banner button{background:#ffe8a1;color:#30270e}
+:root[data-mode="dark"] .pending-bubble{border-color:#d6a23b!important}
