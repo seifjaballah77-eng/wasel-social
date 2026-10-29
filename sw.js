@@ -1,4 +1,4 @@
-const CACHE_NAME = "seif-messages-shell-v7";
+const CACHE_NAME = "seif-messages-shell-v8";
 const SHELL = ["./", "./index.html", "./style.css", "./app.js", "./manifest.json", "./icon.svg"];
 self.addEventListener("install", event => {
   event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(SHELL)).then(() => self.skipWaiting()));
