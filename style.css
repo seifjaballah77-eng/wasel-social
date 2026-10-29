@@ -518,3 +518,16 @@ button .ui-icon,.attach-option .ui-icon,.searchbox .ui-icon{pointer-events:none}
 :root[data-mode="dark"] #chatLog[data-background="purple"]{background-color:#171321;background-image:radial-gradient(ellipse at 15% 15%,#2d2140 0,transparent 45%),radial-gradient(ellipse at 90% 85%,#2a192c 0,transparent 48%)}
 :root[data-mode="dark"] #chatLog[data-background="ocean"]{background-color:#0c202b;background-image:radial-gradient(ellipse at 12% 10%,rgba(27,109,147,.32),transparent 48%),linear-gradient(145deg,#0b202c,#102e3a 65%,#0b1d29)}
 @media(max-width:620px){.wallpaper-note{font-size:9px}.chat-menu{max-height:75dvh;overflow-y:auto}}
+
+
+/* Cleaner message controls: show actions only when the message arrow is opened. */
+.message-actions-toggle{display:inline-flex;align-items:center;gap:4px;margin-top:5px;padding:3px 7px;border:1px solid var(--border-color);border-radius:8px;background:transparent;color:var(--text-secondary);font:inherit;font-size:10px;cursor:pointer;opacity:.72}
+.message-actions-toggle:hover,.message-actions-toggle[aria-expanded="true"]{opacity:1;background:var(--accent-soft);color:var(--text-primary)}
+.message-actions[hidden]{display:none!important}
+.message-actions{display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin-top:5px;padding:5px;border-radius:10px;background:color-mix(in srgb,var(--bg-sidebar) 88%,transparent)}
+.bubble.giant-emoji{font-size:clamp(42px,7vw,64px);line-height:1.25;padding:3px 7px;background:transparent!important;border:0!important;box-shadow:none!important;max-width:90%}
+.bubble.giant-emoji .formatted-message{font-size:inherit;line-height:1.25}
+.bubble.giant-emoji .formatted-message img.emoji{width:1.22em;height:1.22em;max-width:1.22em;max-height:1.22em;vertical-align:-.18em}
+.bubble.giant-emoji .stamp{font-size:9px;opacity:.8}
+.view-once-used{padding:12px 14px;border:1px dashed var(--border-color);border-radius:10px;color:var(--text-secondary);font-size:12px}
+.app-lock-overlay{z-index:10000}.app-lock-overlay .modal-card{width:min(100%,360px)}.app-lock-overlay input{width:100%;margin:10px 0;padding:12px;border:1px solid var(--border-color);border-radius:10px;background:var(--bg-input);color:var(--text-primary);font:inherit}
