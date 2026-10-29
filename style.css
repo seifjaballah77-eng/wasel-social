@@ -324,3 +324,42 @@ img.emoji{height:1.25em;width:1.25em;margin:0 .035em;vertical-align:-.22em;displ
 :root[data-mode="dark"] .emoji-tab.active{background:#233d66;border-color:#5b8dff;color:#fff}
 :root[data-mode="dark"] .emoji-choice:hover,:root[data-mode="dark"] .emoji-choice:focus-visible{background:#23354d}
 @media(max-width:620px){.emoji-grid{grid-template-columns:repeat(7,minmax(0,1fr));max-height:190px}.call-card{height:94vh;border-radius:12px}.call-card-head{padding:9px 11px}}
+
+/* WhatsApp-inspired responsive layout and calmer chat surfaces */
+:root{--wa-green:#00a884;--wa-green-soft:#d9fdd3}
+body{background:#e9edef;color:#111b21}.topbar{background:#f0f2f5;border-bottom-color:#d8dee3;backdrop-filter:none}
+.brand{color:#111b21}.brandmark{background:#00a884;box-shadow:none;border-radius:50%}.brand small{color:#667781}
+.identity,.mode-toggle{background:#fff;border-color:#d9e1e5;color:#41525b}
+.app{max-width:1440px;height:calc(100dvh - 112px);min-height:540px;margin:16px auto 12px;grid-template-columns:minmax(300px,370px) minmax(0,1fr);gap:0;padding:0 12px}
+.panel{border-radius:0;box-shadow:none;border:1px solid #d8dee3}.sidebar{border-radius:8px 0 0 8px}.chat{border-radius:0 8px 8px 0}
+.sidehead{padding:20px 20px 14px}.sidehead h1{font-size:21px;color:#111b21}
+.searchbox{background:#f0f2f5;border:0;border-radius:9px;margin-bottom:12px}.searchbox input{font-size:13px}
+.person{border-radius:0;border-bottom:1px solid #f0f2f5;padding:12px 14px;gap:12px}.person.active,.person:hover{background:#f0f2f5;border-color:transparent;box-shadow:none}
+.avatar,.avatar.large{border-radius:50%}.personmeta strong{font-size:14px;color:#111b21}.personmeta small{color:#667781}
+.chathead{min-height:72px;padding:12px 18px;background:#f0f2f5;border-bottom:1px solid #d8dee3}.chatperson h2{font-size:15px;color:#111b21}.chatperson p{color:#667781}
+.head-icon{border:0;background:transparent;color:#54656f;border-radius:50%;font-size:19px}.head-icon:hover{background:#e2e7e9;border-color:transparent}
+.chatlog,#chatLog[data-background="plain"]{background-color:#efeae2;background-image:radial-gradient(circle at 20% 20%,rgba(95,115,103,.045) 0 1px,transparent 1.5px),radial-gradient(circle at 75% 70%,rgba(95,115,103,.04) 0 1px,transparent 1.5px);background-size:23px 23px,31px 31px}
+.bubble{max-width:min(78%,680px);padding:8px 10px 5px;border:0;border-radius:8px;background:#fff;color:#111b21;box-shadow:0 1px 1px #00000014;font-size:13px;line-height:1.6}
+.bubble.mine{background:#d9fdd3;color:#111b21;border:0;border-radius:8px;box-shadow:0 1px 1px #00000014}.bubble:not(.mine){background:#fff;color:#111b21;border:0;border-radius:8px;box-shadow:0 1px 1px #00000014}
+.bubble .stamp,.mine .stamp{color:#667781}.read-receipt.is-read{color:#53bdeb}
+.composerwrap{background:#f0f2f5;border-top:0;padding:12px 16px}.composer-tools{margin-bottom:7px}
+.messageform input{background:#fff;border:0;border-radius:24px;padding:13px 18px;color:#111b21}.messageform input:focus{background:#fff;border-color:transparent;box-shadow:0 0 0 1px #c8d4d8}
+.messageform button{background:#00a884;border-radius:50%;box-shadow:none}.messageform button:hover{filter:brightness(.96);box-shadow:none;transform:none}
+.composerhint,.privacyhint{color:#667781}.mobile-nav{background:#f0f2f5;border-top:1px solid #d8dee3;box-shadow:0 -3px 10px #00000008}
+.navitem{color:#667781}.navitem.active{color:#008f72}.navitem.active span{background:#d9fdd3;border-radius:18px;padding:4px 16px}
+footer{color:#667781}.image-viewer{touch-action:pan-x pan-y pinch-zoom}.image-viewer img{touch-action:pan-x pan-y pinch-zoom;user-select:none;-webkit-user-drag:none;max-width:96vw;max-height:92dvh}
+@media(max-width:850px){.app{grid-template-columns:minmax(260px,320px) minmax(0,1fr);height:calc(100dvh - 100px)}}
+@media(max-width:620px){.topbar{background:#f0f2f5}.app{height:calc(100dvh - 62px - 66px);min-height:0;padding:0;margin:0;gap:0}.sidebar{border-radius:0;border-inline:0;border-bottom:0;min-height:0;height:100%;max-height:none}.chat{border-radius:0;border-inline:0;border-bottom:0;height:100%;min-height:0}.person{border-radius:0;min-height:76px}.chathead{min-height:64px;padding:8px 10px}.chatlog{padding:14px 10px 18px}.composerwrap{padding:8px 9px calc(8px + env(safe-area-inset-bottom))}.bubble{max-width:88%;font-size:14px}.mobile-nav{min-height:64px}.chat-options{gap:2px}.head-icon{width:30px;height:30px;font-size:17px}.chatperson h2{font-size:13px}}
+:root[data-mode="dark"] body{background:#0b141a;color:#e9edef}
+:root[data-mode="dark"] .topbar,:root[data-mode="dark"] .chathead,:root[data-mode="dark"] .composerwrap,:root[data-mode="dark"] .mobile-nav{background:#202c33;border-color:#2a3942}
+:root[data-mode="dark"] .brand,:root[data-mode="dark"] .sidehead h1,:root[data-mode="dark"] .chatperson h2{color:#e9edef}
+:root[data-mode="dark"] .brand small,:root[data-mode="dark"] .chatperson p,:root[data-mode="dark"] .personmeta small,:root[data-mode="dark"] .composerhint,:root[data-mode="dark"] .privacyhint{color:#8696a0}
+:root[data-mode="dark"] .sidebar,:root[data-mode="dark"] .chat{background:#111b21;border-color:#2a3942}
+:root[data-mode="dark"] .searchbox,:root[data-mode="dark"] .messageform input{background:#202c33;color:#e9edef}
+:root[data-mode="dark"] .person,:root[data-mode="dark"] .side-action{color:#e9edef;border-color:#202c33}
+:root[data-mode="dark"] .person:hover,:root[data-mode="dark"] .person.active{background:#202c33}
+:root[data-mode="dark"] .chatlog,:root[data-mode="dark"] #chatLog[data-background="plain"]{background-color:#0b141a;background-image:radial-gradient(circle at 20% 20%,rgba(180,205,194,.035) 0 1px,transparent 1.5px),radial-gradient(circle at 75% 70%,rgba(180,205,194,.03) 0 1px,transparent 1.5px)}
+:root[data-mode="dark"] .bubble:not(.mine){background:#202c33;color:#e9edef}:root[data-mode="dark"] .bubble.mine{background:#005c4b;color:#e9edef}
+:root[data-mode="dark"] .bubble .stamp{color:#b5c5cd}:root[data-mode="dark"] .head-icon{color:#aebac1}
+:root[data-mode="dark"] .identity,:root[data-mode="dark"] .mode-toggle{background:#202c33;color:#e9edef;border-color:#34434b}
+:root[data-mode="dark"] .navitem{color:#aebac1}:root[data-mode="dark"] .navitem.active{color:#53d9b6}:root[data-mode="dark"] .navitem.active span{background:#064f43}
