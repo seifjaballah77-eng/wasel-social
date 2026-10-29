@@ -103,3 +103,74 @@ body{
   .brandmark{animation:neonBreath 4s ease-in-out infinite alternate}
   @keyframes neonBreath{from{box-shadow:0 0 12px rgba(57,245,255,.25)}to{box-shadow:0 0 20px rgba(57,245,255,.48),0 0 36px rgba(189,92,255,.16)}}
 }
+
+
+/* Mobile-first app navigation and full-screen chat */
+.mobile-nav{display:none}
+.mobile-back{display:none;flex:0 0 36px;width:36px;height:36px;border-radius:12px;border:1px solid rgba(57,245,255,.2);background:#0b1529;color:#66f5ff;font:700 27px/1 system-ui;cursor:pointer}
+button,.toolbutton,.person,.navitem{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+input,button{font-family:inherit}
+html{min-height:100%;overscroll-behavior-y:contain}
+body{min-width:320px;overflow-x:hidden}
+@media(max-width:620px){
+  body{min-height:100dvh;padding-bottom:calc(72px + env(safe-area-inset-bottom))}
+  .topbar{height:62px;padding:0 13px;position:sticky;top:0;z-index:15}
+  .brand{font-size:18px;gap:8px}
+  .brandmark{width:36px;height:36px;border-radius:12px}
+  .brand small{font-size:8px}
+  .identity{max-width:42vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .app{display:flex;flex-direction:column;gap:0;height:auto;min-height:0;margin:0;padding:0;width:100%;max-width:none}
+  .panel{border-radius:0;border-left:0;border-right:0;box-shadow:none}
+  .sidebar{display:flex;max-height:none;min-height:calc(100dvh - 142px);height:auto;border-top:0;border-bottom:0}
+  .sidehead{padding:19px 17px 13px}
+  .sidehead h1{font-size:23px}
+  .searchbox{margin:0 14px 12px;border-radius:14px;min-height:46px}
+  .searchbox input{font-size:14px;padding:12px 0}
+  .editname{margin:0 14px 10px;min-height:42px;font-size:12px}
+  .people{display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;padding:0 12px 20px;gap:5px;flex:1}
+  .person{width:100%;min-width:0;min-height:70px;padding:12px;border-radius:16px;gap:12px}
+  .avatar{width:47px;height:47px;flex-basis:47px;border-radius:16px}
+  .personmeta strong{font-size:14px}
+  .personmeta small{font-size:11px}
+  .sidefoot{display:flex;padding:12px 16px calc(12px + env(safe-area-inset-bottom))}
+  .chat{display:none;height:calc(100dvh - 62px - 68px - env(safe-area-inset-bottom));min-height:0;border-top:0;border-bottom:0}
+  body.mobile-chat-open .sidebar{display:none}
+  body.mobile-chat-open .chat{display:flex}
+  .chathead{min-height:72px;padding:10px 13px;gap:8px}
+  .chatperson{gap:9px;flex:1}
+  .mobile-back{display:inline-grid;place-items:center}
+  .chatperson h2{font-size:14px;max-width:55vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .chatperson p{font-size:10px}
+  .avatar.large{width:42px;height:42px;flex-basis:42px;border-radius:14px}
+  .chatlog{flex:1;min-height:0;padding:15px 12px 18px;gap:12px;overscroll-behavior:contain}
+  .welcome{padding:10px}
+  .bubble{max-width:88%;font-size:14px;padding:11px 13px}
+  .bubble img{max-height:38dvh}
+  .statusline{padding:5px 13px;font-size:10px}
+  .composerwrap{padding:9px 10px calc(8px + env(safe-area-inset-bottom));}
+  .composer-tools{margin-bottom:7px}
+  .toolbutton{min-height:38px;padding:8px 12px}
+  .messageform{gap:7px}
+  .messageform input{min-height:46px;font-size:14px;padding:11px 13px;border-radius:15px}
+  .messageform button{min-height:46px;justify-content:center;padding:10px 13px;border-radius:14px;gap:7px}
+  .messageform button span{display:none}
+  .messageform button b{font-size:20px}
+  .privacyhint{margin-top:6px}
+  .setupnotice{margin:9px 10px 0;font-size:11px}
+  .mobile-nav{position:fixed;z-index:30;bottom:0;left:0;right:0;display:grid;grid-template-columns:repeat(3,1fr);gap:5px;padding:7px 12px calc(7px + env(safe-area-inset-bottom));background:rgba(5,10,24,.94);border-top:1px solid rgba(57,245,255,.22);backdrop-filter:blur(18px);box-shadow:0 -8px 28px rgba(0,0,0,.28)}
+  .navitem{border:1px solid transparent;border-radius:13px;background:transparent;color:#7795aa;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:51px;cursor:pointer}
+  .navitem span{font-size:21px;line-height:1.1}
+  .navitem small{font-size:10px;font-weight:700}
+  .navitem.active{color:#63f2ff;background:linear-gradient(120deg,rgba(57,245,255,.11),rgba(189,92,255,.1));border-color:rgba(57,245,255,.18);text-shadow:0 0 12px rgba(57,245,255,.25)}
+  footer{display:none}
+  .nameoverlay{padding:14px}
+  .namecard{padding:24px 20px;border-radius:22px;max-height:calc(100dvh - 30px);overflow:auto}
+  .namecard h2{font-size:20px}
+}
+@media(max-width:380px){
+  .topright{gap:5px}.identity{font-size:9px;padding:6px 7px}
+  .brand{font-size:16px}.brandmark{width:33px;height:33px}
+  .sidehead{padding-inline:14px}
+  .messageform button{padding-inline:11px}
+}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;transition-duration:.01ms!important}}
