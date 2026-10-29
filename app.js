@@ -514,6 +514,44 @@ let lastBackgroundSync=Date.now();
 function start(){setupMobileNavigation();setupMobileKeyboard();installPrivacyControls();installOfflineQueue();setupExtras();ensureLocalAccount();setupAutoLock();applyTheme(localStorage.getItem(THEME_KEY)||"blue");applyMode("dark");const name=currentName();$("nameSetup").hidden=Boolean(name);$("identity").textContent=name?"أهلاً، "+name:"لم تختر اسمًا بعد";$("setupNotice").hidden=true;$("setupNotice").textContent=""; $("messageText").disabled=true;$("sendMessage").disabled=true;$("chatImage").disabled=true;renderPeople();if(name)refresh();setInterval(()=>{if(document.visibilityState==="visible"){lastBackgroundSync=Date.now();refresh();}else if(Date.now()-lastBackgroundSync>=3000){lastBackgroundSync=Date.now();refresh();}},3000);}
 
 const manualRefreshButton=$("manualRefresh");if(manualRefreshButton&&!manualRefreshButton.dataset.ready){manualRefreshButton.dataset.ready="1";manualRefreshButton.addEventListener("click",async()=>{if(manualRefreshButton.disabled)return;manualRefreshButton.disabled=true;manualRefreshButton.setAttribute("aria-busy","true");manualRefreshButton.title="جارٍ تحديث التطبيق…";try{if("serviceWorker" in navigator){const regs=await navigator.serviceWorker.getRegistrations();await Promise.all(regs.map(reg=>reg.unregister()));}if("caches" in window){const keys=await caches.keys();await Promise.all(keys.map(key=>caches.delete(key)));}}catch(e){}const url=new URL(window.location.href);url.searchParams.set("refresh",String(Date.now()));window.location.replace(url.toString());});}
+// Close pop-up menus and profile/settings dialogs when the user taps outside them.
+document.addEventListener("click",function(event){
+ const target=event.target;
+ const closeMenu=(menuId,buttonId)=>{
+  const menu=$(menuId),button=buttonId?$(buttonId):null;
+  if(menu&&!menu.hidden&&!menu.contains(target)&&(!button||!button.contains(target))){
+   menu.hidden=true;
+   if(button)button.setAttribute("aria-expanded","false");
+   if(button&&buttonId==="attachmentToggle")button.classList.remove("is-active");
+  }
+ };
+ closeMenu("sidebarMenu","sidebarMenuButton");
+ closeMenu("chatMenu","chatMenuButton");
+ closeMenu("attachmentMenu","attachmentToggle");
+ const emojiPanel=$("emojiPanel"),emojiButton=$("emojiPicker");
+ if(emojiPanel&&!emojiPanel.contains(target)&&(!emojiButton||!emojiButton.contains(target))){
+  emojiPanel.remove();
+  emojiButton?.classList.remove("is-active");
+ }
+ ["profileModal","contactModal","imageViewer"].forEach(id=>{
+  const overlay=$(id);
+  if(overlay&&target===overlay){
+   overlay.hidden=true;
+   if(id==="imageViewer")$("imageViewerImage")?.removeAttribute("src");
+  }
+ });
+});
+document.addEventListener("keydown",function(event){
+ if(event.key!=="Escape")return;
+ ["sidebarMenu","chatMenu","attachmentMenu","profileModal","contactModal","imageViewer"].forEach(id=>{const el=$(id);if(el)el.hidden=true;});
+ $("sidebarMenuButton")?.setAttribute("aria-expanded","false");
+ $("chatMenuButton")?.setAttribute("aria-expanded","false");
+ $("attachmentToggle")?.setAttribute("aria-expanded","false");
+ $("attachmentToggle")?.classList.remove("is-active");
+ $("emojiPanel")?.remove();
+ $("emojiPicker")?.classList.remove("is-active");
+ $("imageViewerImage")?.removeAttribute("src");
+});
 start();
 if("serviceWorker"in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(()=>{}));
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&selectedId)loadMessages().catch(()=>{});});
