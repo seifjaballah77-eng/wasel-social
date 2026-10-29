@@ -1,4 +1,4 @@
-// Wasel shared chat prototype using Supabase REST. The room is public to anyone who knows the site.
+// Seif Messages chat prototype using Supabase REST. Existing room and local-storage keys are preserved.
 const $ = id => document.getElementById(id);
 const SUPABASE_URL = "https://qlcrvffejuscbftjotmp.supabase.co";
 const SUPABASE_KEY = "sb_publishable_nY14ZzU_YiOfBrySQlBuFA_G-jg2VOc";
