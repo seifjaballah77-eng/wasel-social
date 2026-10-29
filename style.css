@@ -531,3 +531,40 @@ button .ui-icon,.attach-option .ui-icon,.searchbox .ui-icon{pointer-events:none}
 .bubble.giant-emoji .stamp{font-size:9px;opacity:.8}
 .view-once-used{padding:12px 14px;border:1px dashed var(--border-color);border-radius:10px;color:var(--text-secondary);font-size:12px}
 .app-lock-overlay{z-index:10000}.app-lock-overlay .modal-card{width:min(100%,360px)}.app-lock-overlay input{width:100%;margin:10px 0;padding:12px;border:1px solid var(--border-color);border-radius:10px;background:var(--bg-input);color:var(--text-primary);font:inherit}
+
+
+/* Dark-mode conversation list: high contrast, separated rows and WhatsApp-style hierarchy. */
+:root[data-mode="dark"] .people{background:#0b141a}
+:root[data-mode="dark"] .person{
+  position:relative;
+  min-height:76px;
+  background:#111b21;
+  color:#e9edef!important;
+  border:0!important;
+  border-bottom:1px solid #26343b!important;
+  border-radius:0!important;
+  box-shadow:none!important;
+}
+:root[data-mode="dark"] .person:hover{background:#18252c!important}
+:root[data-mode="dark"] .person.active{background:#202c33!important;box-shadow:inset -3px 0 0 #00a884!important}
+:root[data-mode="dark"] .personmeta{min-width:0;gap:5px}
+:root[data-mode="dark"] .person-topline{display:flex;flex-direction:row;direction:rtl;align-items:center;justify-content:space-between;gap:10px;width:100%;min-width:0}
+:root[data-mode="dark"] .personmeta strong,
+:root[data-mode="dark"] .person-topline strong{color:#ffffff!important;font-size:14px;font-weight:700;line-height:1.5;min-width:0}
+:root[data-mode="dark"] .person-time{color:#8696a0!important;font-size:11px;line-height:1.4;flex-shrink:0}
+:root[data-mode="dark"] .person-preview{direction:ltr;display:flex;align-items:center;gap:5px;min-width:0;width:100%;color:#8696a0!important;font-size:12px;line-height:1.5}
+:root[data-mode="dark"] .person-preview-text{direction:rtl;text-align:right;color:#8696a0!important;min-width:0;flex:1}
+:root[data-mode="dark"] .person-ticks{direction:ltr;color:#53bdeb!important;flex:0 0 auto;font-size:12px}
+:root[data-mode="dark"] .personstatus{display:flex;align-items:center;gap:6px;color:#c6d1d6!important;font-size:11px;line-height:1.4}
+:root[data-mode="dark"] .personstatus span.online{color:#e9edef!important}
+:root[data-mode="dark"] .personstatus span.offline{color:#8696a0!important}
+:root[data-mode="dark"] .personstatus .dot.online{background:#00a884!important;box-shadow:0 0 0 3px #00a88424,0 0 8px #00a88455!important}
+:root[data-mode="dark"] .personstatus .dot.offline{background:#ef4444!important;box-shadow:0 0 0 3px #ef444424!important}
+:root[data-mode="dark"] .person .unread-badge{background:#00a884;color:#ffffff;box-shadow:none}
+:root[data-mode="dark"] .favorite-star{color:#8696a0}
+:root[data-mode="dark"] .favorite-star.is-favorite{color:#ffd166}
+@media(max-width:620px){
+  :root[data-mode="dark"] .person{min-width:210px;min-height:76px;padding:11px 12px}
+  :root[data-mode="dark"] .personmeta strong{font-size:13px}
+  :root[data-mode="dark"] .person-preview{font-size:11px}
+}
