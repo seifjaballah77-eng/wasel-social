@@ -22,19 +22,80 @@ async function api(path,options={}){
  if(response.status===204)return [];
  const raw=await response.text();return raw?JSON.parse(raw):[];
 }
+
+let activeCallApi=null,callScriptPromise=null;
+function ensureCallModal(){
+ let overlay=$("callModal");if(overlay)return overlay;
+ overlay=document.createElement("div");overlay.id="callModal";overlay.className="modal-overlay call-overlay";overlay.hidden=true;
+ const card=document.createElement("section");card.className="call-card";
+ const head=document.createElement("div");head.className="call-card-head";
+ const title=document.createElement("strong");title.id="callModalTitle";title.textContent="مكالمة Seif Messages";
+ const close=document.createElement("button");close.type="button";close.className="call-close";close.textContent="إنهاء المكالمة";close.addEventListener("click",endCall);
+ head.append(title,close);const note=document.createElement("p");note.id="callModalNote";note.className="call-note";
+ const mount=document.createElement("div");mount.id="jitsiMount";mount.className="jitsi-mount";
+ card.append(head,note,mount);overlay.appendChild(card);overlay.addEventListener("click",e=>{if(e.target===overlay)endCall();});document.body.appendChild(overlay);return overlay;
+}
+function loadJitsiScript(){
+ if(window.JitsiMeetExternalAPI)return Promise.resolve();
+ if(callScriptPromise)return callScriptPromise;
+ callScriptPromise=new Promise((resolve,reject)=>{const script=document.createElement("script");script.src="https://meet.jit.si/external_api.js";script.async=true;script.onload=()=>window.JitsiMeetExternalAPI?resolve():reject(new Error("تعذر تحميل مكتبة الاتصال."));script.onerror=()=>reject(new Error("تعذر الوصول إلى خدمة الاتصال. تحقق من الإنترنت."));document.head.appendChild(script);});
+ return callScriptPromise;
+}
+async function startCall(kind){
+ if(!selectedId||selectedId===myId){status("اختر صديقًا من قائمة الأشخاص أولًا.",true);return;}
+ const person=people.find(p=>p.user_id===selectedId);if(!person){status("لم يتم العثور على جهة الاتصال. حدّث قائمة الأشخاص أولًا.",true);return;}
+ const overlay=ensureCallModal();overlay.hidden=false;$("callModalTitle").textContent=(kind==="video"?"مكالمة فيديو مع ":"مكالمة صوتية مع ")+(person.display_name||"صديقك");$("callModalNote").textContent="للانضمام من الجهاز الآخر، افتح المحادثة نفسها واضغط زر الاتصال نفسه. هذه النسخة التجريبية لا ترسل رنينًا تلقائيًا بعد.";
+ const mount=$("jitsiMount");mount.replaceChildren();status("جارٍ الاتصال بخدمة المكالمات…");
+ try{
+  await loadJitsiScript();
+  if(overlay.hidden)return;
+  const roomName="seifmessages-"+[myId,selectedId].sort().join("-");
+  activeCallApi=new window.JitsiMeetExternalAPI("meet.jit.si",{roomName,width:"100%",height:"100%",parentNode:mount,lang:"ar",userInfo:{displayName:currentName()||"مستخدم"},configOverwrite:{startWithAudioMuted:false,startWithVideoMuted:kind==="audio",prejoinConfig:{enabled:false},disableDeepLinking:true},interfaceConfigOverwrite:{TOOLBAR_BUTTONS:kind==="audio"?["microphone","hangup","chat","settings","tileview"]:["microphone","camera","hangup","chat","settings","tileview"]}});
+  activeCallApi.addListener("videoConferenceJoined",()=>status("أنت داخل المكالمة. اسم الغرفة مشترك بين الطرفين."));
+  activeCallApi.addListener("participantJoined",()=>{$("callModalNote").textContent="انضم صديقك إلى المكالمة.";status("انضم الطرف الآخر إلى المكالمة.");});
+  activeCallApi.addListener("participantLeft",()=>{$("callModalNote").textContent="غادر أحد المشاركين المكالمة.";});
+  activeCallApi.addListener("readyToClose",endCall);
+  activeCallApi.addListener("errorOccurred",e=>{status("حدث خطأ في الاتصال: "+(e?.message||"تحقق من صلاحيات الكاميرا والميكروفون."),true);});
+ }catch(e){endCall();status("تعذر بدء المكالمة: "+e.message,true);}
+}
+function endCall(){
+ const apiInstance=activeCallApi;activeCallApi=null;
+ if(apiInstance){try{apiInstance.executeCommand("hangup");}catch(e){}try{apiInstance.dispose();}catch(e){}}
+ const overlay=$("callModal");if(overlay)overlay.hidden=true;const mount=$("jitsiMount");if(mount)mount.replaceChildren();status("انتهت المكالمة.");
+}
+
+function parseEmoji(root){if(root&&window.twemoji)window.twemoji.parse(root,{base:"https://cdn.jsdelivr.net/npm/twemoji@14.0.2/assets/",folder:"svg",ext:".svg"});}
 function setupExtras(){
  const attach=$("attachmentToggle"),menu=$("attachmentMenu");
  if(attach&&!attach.dataset.ready){attach.dataset.ready="1";attach.addEventListener("click",()=>{menu.hidden=!menu.hidden;attach.setAttribute("aria-expanded",String(!menu.hidden));});}
  [$("chatDocument"),$("chatAudio")].forEach(input=>input?.addEventListener("change",()=>{if(input.files?.[0])status("إرسال الملفات غير مفعّل بعد؛ نحتاج ربط Supabase Storage.",true);input.value="";}));
  $("cameraImage")?.addEventListener("change",e=>{if(e.target.files?.[0])sendImage(e.target.files[0]);e.target.value="";});
  menu?.querySelectorAll("[data-attachment]").forEach(b=>b.addEventListener("click",()=>{menu.hidden=true;if(b.dataset.attachment==="location")status("مشاركة الموقع غير مفعّلة بعد.");else if(b.dataset.attachment==="contact")status("مشاركة جهات الاتصال غير مفعّلة بعد.");else status("إنشاء استطلاع رأي يحتاج جداول خاصة في قاعدة البيانات.");}));
- document.querySelectorAll(".head-icon").forEach(b=>{if(b.dataset.ready)return;b.dataset.ready="1";b.addEventListener("click",()=>{if(b.id==="chatMenuButton"){const m=$("chatMenu");m.hidden=!m.hidden;b.setAttribute("aria-expanded",String(!m.hidden));return;}status("المكالمات الصوتية والمرئية غير متاحة بعد؛ لم نربط خدمة اتصال فعلية.");});});
+ document.querySelectorAll(".head-icon").forEach(b=>{if(b.dataset.ready)return;b.dataset.ready="1";b.addEventListener("click",()=>{if(b.id==="chatMenuButton"){const m=$("chatMenu");m.hidden=!m.hidden;b.setAttribute("aria-expanded",String(!m.hidden));return;}startCall(b.id==="videoCall"?"video":"audio");});});
  $("chatMenu")?.querySelectorAll("[data-menu-action]").forEach(b=>{if(b.dataset.ready)return;b.dataset.ready="1";b.addEventListener("click",()=>handleChatMenu(b.dataset.menuAction));});
  const tools=document.querySelector(".composer-tools");
  if(!$("emojiPicker")){
-  const b=document.createElement("button");b.type="button";b.id="emojiPicker";b.className="attach-button emoji-trigger";b.textContent="😊";b.title="إضافة إيموجي";b.setAttribute("aria-label","إضافة إيموجي");
-  b.addEventListener("click",()=>{let panel=$("emojiPanel");if(panel){panel.remove();return;}panel=document.createElement("div");panel.id="emojiPanel";panel.className="emoji-panel";"😀 😃 😄 😁 😂 🥹 😊 😍 🥰 😎 🤔 😢 😭 😡 👍 👎 👏 🙌 ❤️ 💙 🔥 🎉 🙏".split(" ").forEach(e=>{const x=document.createElement("button");x.type="button";x.textContent=e;x.addEventListener("click",()=>{$("messageText").value += e;$("messageText").dispatchEvent(new Event("input",{bubbles:true}));$("messageText").focus();});panel.appendChild(x);});tools.insertAdjacentElement("afterend",panel);});
-  tools.appendChild(b);
+  const b=document.createElement("button");b.type="button";b.id="emojiPicker";b.className="attach-button emoji-trigger";b.textContent="😊";b.title="كل الإيموجيات";b.setAttribute("aria-label","فتح لوحة الإيموجي");
+  b.addEventListener("click",()=>{let panel=$("emojiPanel");if(panel){panel.remove();return;}panel=document.createElement("section");panel.id="emojiPanel";panel.className="emoji-panel emoji-picker-full";panel.setAttribute("aria-label","لوحة الإيموجي");
+   const search=document.createElement("input");search.type="search";search.className="emoji-search";search.placeholder="ابحث في الإيموجيات…";search.setAttribute("aria-label","ابحث في الإيموجيات");panel.appendChild(search);
+   const tabs=document.createElement("div");tabs.className="emoji-tabs";panel.appendChild(tabs);
+   const grid=document.createElement("div");grid.className="emoji-grid";panel.appendChild(grid);
+   const categories=[
+    ["وجوه","😀 😃 😄 😁 😆 😅 😂 🤣 🥲 🥹 ☺️ 😊 😇 🙂 🙃 😉 😌 😍 🥰 😘 😗 😙 😚 😋 😛 😝 😜 🤪 🤨 🧐 🤓 😎 🥸 🤩 🥳 😏 😒 😞 😔 😟 😕 🙁 ☹️ 😣 😖 😫 😩 🥺 😢 😭 😤 😠 😡 🤬 🤯 😳 🥵 🥶 😱 😨 😰 😥 😓 🤗 🤔 🫣 🤭 🫢 🤫 🤥 😶 😐 😑 😬 🫠 🙄 😯 😦 😧 😮 😲 🥱 😴 🤤 😪 😵 🤐 🥴 🤢 🤮 🤧 😷 🤒 🤕"],
+    ["قلوب","❤️ 🧡 💛 💚 💙 💜 🖤 🤍 🤎 🩷 🩵 🩶 💔 ❤️‍🔥 ❤️‍🩹 ❣️ 💕 💞 💓 💗 💖 💘 💝 💟 ♥️ 💌 💋 💑 💏 🫶"],
+    ["حيوانات","🐶 🐱 🐭 🐹 🐰 🦊 🐻 🐼 🐻‍❄️ 🐨 🐯 🦁 🐮 🐷 🐸 🐵 🙈 🙉 🙊 🐒 🐔 🐧 🐦 🐤 🐣 🐥 🦆 🦅 🦉 🦇 🐺 🐗 🐴 🦄 🐝 🪱 🐛 🦋 🐌 🐞 🐜 🪰 🪲 🪳 🦟 🦗 🕷️ 🕸️ 🦂 🐢 🐍 🦎 🦖 🦕 🐙 🦑 🦐 🦞 🦀 🐡 🐠 🐟 🐬 🐳 🐋 🦈 🐊 🐅 🐆 🦓 🦍 🦧 🦣 🐘 🦛 🦏 🐪 🐫 🦒 🦘 🦬 🐃 🐂 🐄 🐎 🐖 🐏 🐑 🦙 🐐 🦌 🐕 🦮 🐕‍🦺 🐩 🐈 🐈‍⬛ 🪶 🐓 🦃 🦤 🦚 🦜 🦢 🦩 🕊️ 🐇 🦝 🦨 🦡 🦫 🦦 🦥 🐁 🐀 🐿️ 🦔"],
+    ["الطقس والطبيعة","🌱 🌿 ☘️ 🍀 🎍 🪴 🌵 🌴 🌳 🌲 🌾 🌷 🌹 🥀 🌺 🌸 🌼 🌻 🌞 🌝 🌛 🌜 🌚 🌕 🌖 🌗 🌘 🌑 🌒 🌓 🌔 🌙 🌎 🌍 🌏 🪐 💫 ⭐ 🌟 ✨ ⚡ ☄️ 💥 🔥 🌪️ 🌈 ☀️ 🌤️ ⛅ 🌥️ ☁️ 🌦️ 🌧️ ⛈️ 🌩️ 🌨️ ❄️ ☃️ ⛄ 🌬️ 💨 💧 💦 ☔ ☂️ 🌊 🌫️"],
+    ["طعام وشراب","🍏 🍎 🍐 🍊 🍋 🍌 🍉 🍇 🍓 🫐 🍈 🍒 🍑 🥭 🍍 🥥 🥝 🍅 🫒 🥑 🍆 🥔 🥕 🌽 🌶️ 🫑 🥒 🥬 🥦 🧄 🧅 🍄 🥜 🌰 🍞 🥐 🥖 🫓 🥨 🥯 🥞 🧇 🧀 🍖 🍗 🥩 🥓 🍔 🍟 🍕 🌭 🥪 🌮 🌯 🫔 🥙 🧆 🥚 🍳 🥘 🍲 🥣 🥗 🍿 🧈 🧂 🥫 🍱 🍘 🍙 🍚 🍛 🍜 🍝 🍠 🍢 🍣 🍤 🍥 🥮 🍡 🥟 🥠 🥡 🦪 🍦 🍧 🍨 🍩 🍪 🎂 🍰 🧁 🥧 🍫 🍬 🍭 🍮 🍯 🍼 🥛 ☕ 🫖 🍵 🍶 🍺 🍻 🥂 🍷 🥃 🍸 🍹 🧉 🧃 🧋"],
+    ["أنشطة وألعاب","⚽ 🏀 🏈 ⚾ 🥎 🎾 🏐 🏉 🥏 🎱 🪀 🏓 🏸 🏒 🏑 🥍 🏏 🪃 🥅 ⛳ 🪁 🏹 🎣 🤿 🥊 🥋 🎽 🛹 🛼 🛷 ⛸️ 🥌 🎿 ⛷️ 🏂 🏋️ 🤼 🤸 ⛹️ 🤺 🤾 🏌️ 🏇 🧘 🏄 🏊 🚴 🚵 🧗 🏆 🥇 🥈 🥉 🏅 🎖️ 🏵️ 🎗️ 🎫 🎟️ 🎪 🤹 🎭 🩰 🎨 🎬 🎤 🎧 🎼 🎹 🥁 🪘 🎷 🎺 🎸 🪕 🎻 🎲 ♟️ 🎯 🎳 🎮 🕹️ 🧩"],
+    ["السفر والأشياء","🚗 🚕 🚙 🚌 🚎 🏎️ 🚓 🚑 🚒 🚐 🛻 🚚 🚛 🚜 🛵 🏍️ 🚲 🛴 🛹 🚏 🛣️ 🛤️ 🚦 🚥 🛑 🚧 ⚓ ⛵ 🚤 🛳️ ⛴️ 🚢 ✈️ 🛩️ 🛫 🛬 🪂 💺 🚁 🚟 🚠 🚡 🛰️ 🚀 🛸 🌋 🗻 🏕️ 🏖️ 🏜️ 🏝️ 🏞️ 🏟️ 🏛️ 🏗️ 🧱 🏠 🏡 🏢 🏣 🏥 🏦 🏨 🏪 🏫 🏬 🏭 🏯 🏰 💒 🗼 🗽 ⛪ 🕌 🛕 🕍 ⛩️ 🕋 ⛲ 🌁 🌃 🌆 🌇 🌉 🎆 🎇 🌌"],
+    ["رموز وأعلام","❤️‍🔥 💯 💢 💬 👁️‍🗨️ 🗨️ 🗯️ 💭 💤 🔔 🔕 🎵 🎶 🏧 🚮 🚰 ♿ 🚹 🚺 🚻 🚼 🚾 🛂 🛃 🛄 🛅 ⚠️ 🚸 ⛔ 🚫 🚳 🚭 🚯 🚱 🚷 📵 🔞 ☢️ ☣️ ⬆️ ↗️ ➡️ ↘️ ⬇️ ↙️ ⬅️ ↖️ ↕️ ↔️ 🔄 🔃 🔙 🔚 🔛 🔜 🔝 🛐 ⚛️ 🕉️ ✡️ ☸️ ☯️ ✝️ ☦️ ☪️ ☮️ 🕎 🔯 🪯 ♈ ♉ ♊ ♋ ♌ ♍ ♎ ♏ ♐ ♑ ♒ ♓ 🔀 🔁 🔂 ▶️ ⏸️ ⏹️ ⏺️ ⏭️ ⏮️ 🔼 🔽 ⏫ ⏬ ➕ ➖ ➗ ✖️ ♾️ 💲 💱 ™️ ©️ ®️ 〰️ ➰ ➿ ✔️ ☑️ 🔘 ⚪ ⚫ 🔴 🟠 🟡 🟢 🔵 🟣 🟤 🟥 🟧 🟨 🟩 🟦 🟪 🟫 ⬛ ⬜ 🔶 🔷 🔸 🔹 🔺 🔻 💠 🔈 🔉 🔊 🔇 🔍 🔎 🔒 🔓 🔑 🗝️ 🧿 🔮 🪬 🎃 🎄 🎁 🎈 🎉 🎊 🪅 🪩 🧨"]
+   ];
+   const addEmoji=(emoji)=>{const x=document.createElement("button");x.type="button";x.className="emoji-choice";x.dataset.emoji=emoji;x.textContent=emoji;x.title=emoji;x.setAttribute("aria-label",emoji);x.addEventListener("click",()=>{const field=$("messageText");const start=field.selectionStart??field.value.length,end=field.selectionEnd??field.value.length;field.value=field.value.slice(0,start)+emoji+field.value.slice(end);field.setSelectionRange(start+emoji.length,start+emoji.length);field.dispatchEvent(new Event("input",{bubbles:true}));field.focus();});grid.appendChild(x);};
+   const draw=(filter="",category=0)=>{grid.replaceChildren();const term=filter.trim().toLocaleLowerCase();const list=term?categories.flatMap(c=>c[1].split(" ").map(e=>e.trim()).filter(Boolean)).filter((e,i,a)=>a.indexOf(e)===i&&e.includes(term)):categories[category][1].split(" ").filter(Boolean);list.forEach(addEmoji);if(!list.length){const empty=document.createElement("p");empty.className="emoji-empty";empty.textContent="لم نعثر على إيموجي مطابق.";grid.appendChild(empty);}if(window.twemoji)window.twemoji.parse(grid,{base:"https://cdn.jsdelivr.net/npm/twemoji@14.0.2/assets/",folder:"svg",ext:".svg"});};
+   categories.forEach((c,i)=>{const t=document.createElement("button");t.type="button";t.className="emoji-tab";t.textContent=c[0];t.addEventListener("click",()=>{tabs.querySelectorAll("button").forEach(n=>n.classList.toggle("active",n===t));search.value="";draw("",i);});tabs.appendChild(t);if(i===0)t.classList.add("active");});
+   search.addEventListener("input",()=>{tabs.querySelectorAll("button").forEach(n=>n.classList.remove("active"));draw(search.value);});
+   draw();tools.insertAdjacentElement("afterend",panel);search.focus();
+  });tools.appendChild(b);
  }
  const form=$("messageForm");if(!$("replyPreview")){const p=document.createElement("div");p.id="replyPreview";p.className="reply-preview";p.hidden=true;const label=document.createElement("span");label.id="replyPreviewText";p.appendChild(label);const cancel=document.createElement("button");cancel.type="button";cancel.textContent="×";cancel.setAttribute("aria-label","إلغاء الرد");cancel.addEventListener("click",clearReply);p.appendChild(cancel);form.parentElement.insertBefore(p,form);}
 }
@@ -103,10 +164,10 @@ function renderMessages(){
   const bubble=document.createElement("div");bubble.className="bubble "+(m.sender_id===myId?"mine":"")+(m.deleted_at?" deleted":"");
   if(m.reply_to){const original=byId.get(String(m.reply_to));const q=document.createElement("div");q.className="quoted-message";q.textContent="↪ "+(original?(original.deleted_at?"تم حذف الرسالة":original.body||"صورة"):"رسالة سابقة");bubble.appendChild(q);}
   if(m.deleted_at){const gone=document.createElement("div");gone.className="deleted-text";gone.textContent="تم حذف هذه الرسالة";bubble.appendChild(gone);}
-  else {if(m.image_data){const img=document.createElement("img");img.alt="صورة مرسلة — اضغط للتكبير";img.loading="lazy";img.src=m.image_data;img.style.maxWidth="100%";img.style.borderRadius="12px";img.tabIndex=0;img.role="button";img.addEventListener("click",()=>openImageViewer(m.image_data));img.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();openImageViewer(m.image_data);}});bubble.appendChild(img);}if(m.body){const body=document.createElement("div");body.className="formatted-message";appendFormattedText(body,m.body);bubble.appendChild(body);}}
-  const reacts=document.createElement("div");reacts.className="reaction-row";const reactions=m.reactions&&typeof m.reactions==="object"?m.reactions:{};Object.entries(reactions).forEach(([emoji,ids])=>{const count=Array.isArray(ids)?ids.length:Number(ids)||0;if(count){const r=document.createElement("button");r.type="button";r.className="reaction-chip";r.textContent=emoji+" "+count;r.addEventListener("click",()=>toggleReaction(m,emoji));reacts.appendChild(r);}});bubble.appendChild(reacts);
+  else {if(m.image_data){const img=document.createElement("img");img.alt="صورة مرسلة — اضغط للتكبير";img.loading="lazy";img.src=m.image_data;img.style.maxWidth="100%";img.style.borderRadius="12px";img.tabIndex=0;img.role="button";img.addEventListener("click",()=>openImageViewer(m.image_data));img.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();openImageViewer(m.image_data);}});bubble.appendChild(img);}if(m.body){const body=document.createElement("div");body.className="formatted-message";appendFormattedText(body,m.body);parseEmoji(body);bubble.appendChild(body);}}
+  const reacts=document.createElement("div");reacts.className="reaction-row";const reactions=m.reactions&&typeof m.reactions==="object"?m.reactions:{};Object.entries(reactions).forEach(([emoji,ids])=>{const count=Array.isArray(ids)?ids.length:Number(ids)||0;if(count){const r=document.createElement("button");r.type="button";r.className="reaction-chip";r.textContent=emoji+" "+count;r.addEventListener("click",()=>toggleReaction(m,emoji));parseEmoji(r);reacts.appendChild(r);}});bubble.appendChild(reacts);
   const actions=document.createElement("div");actions.className="message-actions";const pins=JSON.parse(localStorage.getItem(PIN_KEY)||"{}");const pinKey=String(selectedId||"") + ":" + String(m.id);const pin=document.createElement("button");pin.type="button";pin.textContent=pins[pinKey]?"📌 مثبتة":"📌 تثبيت";pin.addEventListener("click",()=>{const current=JSON.parse(localStorage.getItem(PIN_KEY)||"{}");if(current[pinKey])delete current[pinKey];else current[pinKey]=true;localStorage.setItem(PIN_KEY,JSON.stringify(current));renderMessages();});actions.appendChild(pin);const reply=document.createElement("button");reply.type="button";reply.textContent="↩ رد";reply.addEventListener("click",()=>setReply(m));actions.appendChild(reply);
-  for(const emoji of ["👍","❤️","😂","😮","😢","🙏"]){const react=document.createElement("button");react.type="button";react.textContent=emoji;react.setAttribute("aria-label","تفاعل "+emoji);react.addEventListener("click",()=>toggleReaction(m,emoji));actions.appendChild(react);}const moreReact=document.createElement("button");moreReact.type="button";moreReact.textContent="＋";moreReact.title="رمز آخر";moreReact.addEventListener("click",()=>{const choice=prompt("اكتب رمز الإيموجي الذي تريد التفاعل به:","✨");if(choice&&choice.trim())toggleReaction(m,choice.trim());});actions.appendChild(moreReact);
+  for(const emoji of ["👍","❤️","😂","😮","😢","🙏"]){const react=document.createElement("button");react.type="button";react.textContent=emoji;react.setAttribute("aria-label","تفاعل "+emoji);parseEmoji(react);react.addEventListener("click",()=>toggleReaction(m,emoji));actions.appendChild(react);}const moreReact=document.createElement("button");moreReact.type="button";moreReact.textContent="＋";moreReact.title="رمز آخر";moreReact.addEventListener("click",()=>{const choice=prompt("اكتب رمز الإيموجي الذي تريد التفاعل به:","✨");if(choice&&choice.trim())toggleReaction(m,choice.trim());});actions.appendChild(moreReact);
   let pressTimer=null,startX=0,startY=0;bubble.addEventListener("pointerdown",e=>{startX=e.clientX;startY=e.clientY;pressTimer=setTimeout(()=>{pressTimer=null;const choice=prompt("تفاعل مع الرسالة: 👍 ❤️ 😂 😮 😢 🙏 أو اكتب رمزًا آخر","❤️");if(choice&&choice.trim())toggleReaction(m,choice.trim());},650);});bubble.addEventListener("pointerup",e=>{if(pressTimer){clearTimeout(pressTimer);pressTimer=null;}const dx=e.clientX-startX,dy=e.clientY-startY;if(Math.abs(dx)>65&&Math.abs(dy)<45)setReply(m);});bubble.addEventListener("pointercancel",()=>{if(pressTimer)clearTimeout(pressTimer);});bubble.addEventListener("pointermove",e=>{if(Math.abs(e.clientX-startX)>15||Math.abs(e.clientY-startY)>15){if(pressTimer){clearTimeout(pressTimer);pressTimer=null;}}});
   if(m.sender_id===myId&&!m.deleted_at){if(m.body){const edit=document.createElement("button");edit.type="button";edit.textContent="تعديل";edit.addEventListener("click",()=>editMessage(m));actions.appendChild(edit);}const del=document.createElement("button");del.type="button";del.textContent="حذف";del.addEventListener("click",()=>deleteMessage(m));actions.appendChild(del);}bubble.appendChild(actions);
   if(pins[pinKey]){const pinned=document.createElement("small");pinned.className="pinned-label";pinned.textContent="📌 رسالة مثبتة على هذا الجهاز";bubble.appendChild(pinned);}const stamp=document.createElement("span");stamp.className="stamp";stamp.textContent=(m.sender_id===myId?"أنت":m.sender_name||"صديقك")+" · "+timeLabel(m.created_at);
