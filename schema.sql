@@ -155,3 +155,23 @@ grant usage on schema public to anon;
 grant select, insert, update on public.wasel_chat_people to anon;
 grant select, insert on public.wasel_chat_messages to anon;
 grant usage, select on sequence public.wasel_chat_messages_id_seq to anon;
+
+
+-- Seif Messages feature migration (safe to re-run).
+alter table public.wasel_chat_people add column if not exists avatar_data text;
+alter table public.wasel_chat_people add column if not exists is_typing boolean not null default false;
+alter table public.wasel_chat_people add column if not exists typing_to text;
+alter table public.wasel_chat_messages add column if not exists read_at timestamptz;
+alter table public.wasel_chat_messages add column if not exists delivered_at timestamptz;
+alter table public.wasel_chat_messages add column if not exists reply_to bigint;
+alter table public.wasel_chat_messages add column if not exists reactions jsonb not null default '{}'::jsonb;
+alter table public.wasel_chat_messages add column if not exists deleted_at timestamptz;
+create index if not exists wasel_chat_messages_unread_idx on public.wasel_chat_messages(recipient_id, read_at) where read_at is null and deleted_at is null;
+create index if not exists wasel_chat_messages_reply_idx on public.wasel_chat_messages(reply_to);
+-- This is deliberately a personal-use, public-room MVP: anyone using the public anon key
+-- can update rows in this room. Do not use it for private or sensitive conversations.
+drop policy if exists "Wasel public messages update" on public.wasel_chat_messages;
+create policy "Wasel public messages update" on public.wasel_chat_messages
+  for update to anon using (room_id = 'wasel-friends') with check (room_id = 'wasel-friends');
+grant select, insert, update on public.wasel_chat_messages to anon;
+grant select, insert, update on public.wasel_chat_people to anon;
