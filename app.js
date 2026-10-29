@@ -166,7 +166,7 @@ function setupExtras(){
  const tools=document.querySelector(".composer-tools");
  if(!$("emojiPicker")){
   const b=document.createElement("button");b.type="button";b.id="emojiPicker";b.className="attach-button emoji-trigger";b.innerHTML=uiIcon("smile");b.title="كل الإيموجيات";b.setAttribute("aria-label","فتح لوحة الإيموجي");
-  b.addEventListener("click",()=>{let panel=$("emojiPanel");if(panel){panel.remove();return;}panel=document.createElement("section");panel.id="emojiPanel";panel.className="emoji-panel emoji-picker-full";panel.setAttribute("aria-label","لوحة الإيموجي");
+  b.addEventListener("click",()=>{let panel=$("emojiPanel");if(panel){panel.remove();b.classList.remove("is-active");return;}b.classList.add("is-active");panel=document.createElement("section");panel.id="emojiPanel";panel.className="emoji-panel emoji-picker-full";panel.setAttribute("aria-label","لوحة الإيموجي");
    const search=document.createElement("input");search.type="search";search.className="emoji-search";search.placeholder="ابحث في الإيموجيات…";search.setAttribute("aria-label","ابحث في الإيموجيات");panel.appendChild(search);
    const tabs=document.createElement("div");tabs.className="emoji-tabs";panel.appendChild(tabs);
    const grid=document.createElement("div");grid.className="emoji-grid";panel.appendChild(grid);
