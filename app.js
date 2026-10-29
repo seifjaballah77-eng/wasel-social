@@ -4,7 +4,7 @@ const $ = id => document.getElementById(id);
 const SUPABASE_URL = "https://qlcrvffejuscbftjotmp.supabase.co";
 const SUPABASE_KEY = "sb_publishable_nY14ZzU_YiOfBrySQlBuFA_G-jg2VOc";
 const ROOM = "wasel-friends", PROFILE_KEY = "wasel-personal-name-v1", ID_KEY = "wasel-chat-user-id-v1";
-const PHOTO_KEY = "wasel-chat-photo-v1", SOUND_KEY = "wasel-chat-sound-v1", NOTIFY_KEY = "wasel-chat-notify-v1", BIO_KEY = "wasel-chat-bio-v1", FAVORITES_KEY = "wasel-chat-favorites-v1", THEME_KEY = "wasel-chat-theme-v1", PIN_KEY = "wasel-chat-pins-v1", BG_KEY = "wasel-chat-backgrounds-v1", MUTE_KEY = "wasel-chat-muted-v1", MODE_KEY = "wasel-chat-mode-v1", SELECTED_KEY = "wasel-chat-selected-v1", CHAT_LOCKS_KEY="seif-chat-locks-v1", AUTO_LOCK_KEY="seif-auto-lock-minutes-v1", MASTER_PIN_KEY="seif-app-lock-pin-v1", GHOST_KEY="seif-ghost-mode-v1", ACCOUNTS_KEY="seif-local-accounts-v1";
+const PHOTO_KEY = "wasel-chat-photo-v1", SOUND_KEY = "wasel-chat-sound-v1", NOTIFY_KEY = "wasel-chat-notify-v1", BIO_KEY = "wasel-chat-bio-v1", FAVORITES_KEY = "wasel-chat-favorites-v1", THEME_KEY = "wasel-chat-theme-v1", PIN_KEY = "wasel-chat-pins-v1", BG_KEY = "wasel-chat-backgrounds-v1", MUTE_KEY = "wasel-chat-muted-v1", MODE_KEY = "wasel-chat-mode-v1", SELECTED_KEY = "wasel-chat-selected-v1", CHAT_LOCKS_KEY="seif-chat-locks-v1", AUTO_LOCK_KEY="seif-auto-lock-minutes-v1", MASTER_PIN_KEY="seif-app-lock-pin-v1", GHOST_KEY="seif-ghost-mode-v1", ACCOUNTS_KEY="seif-local-accounts-v1", PENDING_QUEUE_KEY="seif-pending-messages-v1";
 const API = SUPABASE_URL + "/rest/v1/";
 let myId = localStorage.getItem(ID_KEY) || crypto.randomUUID();
 localStorage.setItem(ID_KEY,myId);
@@ -164,7 +164,7 @@ function appendFormattedText(root,text){
 function renderMessages(){
  const log=$("chatLog");log.replaceChildren();
  if(!selectedId){const w=document.createElement("div");w.className="welcome";w.innerHTML='<div class="welcomeicon">'+uiIcon("mail")+'</div><h3>ابدأ محادثتك</h3><p>ابحث عن صديقك واختره من القائمة. يجب أن يفتح هو أيضًا الموقع ويكتب اسمه.</p>';log.appendChild(w);return;}
- if(!messages.length){const w=document.createElement("div");w.className="welcome";w.innerHTML='<div class="welcomeicon">'+uiIcon("mail")+'</div><h3>لا توجد رسائل بعد</h3><p>ابدأ المحادثة برسالة ترسلها لصديقك.</p>';log.appendChild(w);}
+ if(!messages.length&&!pendingForSelected().length){const w=document.createElement("div");w.className="welcome";w.innerHTML='<div class="welcomeicon">'+uiIcon("mail")+'</div><h3>لا توجد رسائل بعد</h3><p>ابدأ المحادثة برسالة ترسلها لصديقك.</p>';log.appendChild(w);}
  const visibleMessages=messageSearchTerm?messages.filter(m=>(m.body||"").toLocaleLowerCase().includes(messageSearchTerm)):messages;
  if(messages.length&&!visibleMessages.length){const no=document.createElement("div");no.className="empty";no.textContent="لا توجد رسائل تطابق البحث.";log.appendChild(no);return;}
  const byId=new Map(messages.map(m=>[String(m.id),m]));
@@ -182,6 +182,15 @@ function renderMessages(){
   if(pins[pinKey]){const pinned=document.createElement("small");pinned.className="pinned-label";pinned.innerHTML=uiIcon("pin")+" رسالة مثبتة على هذا الجهاز";bubble.appendChild(pinned);}const stamp=document.createElement("span");stamp.className="stamp";stamp.textContent=(m.sender_id===myId?"أنت":m.sender_name||"صديقك")+" · "+timeLabel(m.created_at);
   if(m.sender_id===myId){const receipt=document.createElement("span");receipt.className="read-receipt"+(m.read_at?" is-read":"");receipt.textContent=m.read_at?" ✓✓":m.delivered_at?" ✓✓":" ✓";receipt.title=m.read_at?"تمت القراءة":m.delivered_at?"تم التسليم":"تم الإرسال";stamp.appendChild(receipt);}
   bubble.appendChild(stamp);log.appendChild(bubble);
+ }
+ for(const item of pendingForSelected()){
+  const bubble=document.createElement("div");bubble.className="bubble mine pending-bubble";
+  const body=document.createElement("div");body.className="formatted-message";appendFormattedText(body,item.body);parseEmoji(body);bubble.appendChild(body);
+  const stamp=document.createElement("span");stamp.className="stamp";stamp.textContent="معلّقة · لم تُرسل بعد";bubble.appendChild(stamp);
+  const actions=document.createElement("div");actions.className="pending-actions";
+  const retry=document.createElement("button");retry.type="button";retry.textContent="إعادة الإرسال";retry.disabled=!navigator.onLine;retry.addEventListener("click",()=>retryPendingMessage(item.id));actions.appendChild(retry);
+  const edit=document.createElement("button");edit.type="button";edit.textContent="تعديل";edit.addEventListener("click",()=>{const value=prompt("عدّل الرسالة قبل إرسالها:",item.body);if(value===null)return;if(!value.trim()){status("اكتب نصًا أو احذف الرسالة المعلّقة.",true);return;}const q=readPendingQueue().map(x=>x.id===item.id?{...x,body:value.trim()}:x);localStorage.setItem(PENDING_QUEUE_KEY,JSON.stringify(q));renderMessages();updateOfflineBanner();});actions.appendChild(edit);
+  const remove=document.createElement("button");remove.type="button";remove.textContent="حذف";remove.addEventListener("click",()=>{localStorage.setItem(PENDING_QUEUE_KEY,JSON.stringify(readPendingQueue().filter(x=>x.id!==item.id)));updateOfflineBanner();renderMessages();status("حُذفت الرسالة المعلّقة من هذا الجهاز.");});actions.appendChild(remove);bubble.appendChild(actions);log.appendChild(bubble);
  }
  log.scrollTop=log.scrollHeight;
 }
@@ -237,10 +246,39 @@ function applyTheme(theme){const allowed=["blue","purple","green"];const value=a
 function applyMode(mode){const value=mode==="dark"?"dark":"light";document.documentElement.dataset.mode=value;localStorage.setItem(MODE_KEY,value);document.documentElement.style.colorScheme=value;const b=$("themeModeToggle");if(b){b.innerHTML=uiIcon(value==="dark"?"sun":"moon")+" "+(value==="dark"?"الوضع الفاتح":"الوضع الداكن");b.setAttribute("aria-pressed",String(value==="dark"));}}
 async function saveProfilePhoto(file){if(!file)return;if(!["image/jpeg","image/png","image/webp"].includes(file.type)||file.size>100*1024){$("profileError").textContent="اختر صورة JPG أو PNG أو WEBP بحجم لا يتجاوز 100KB.";$("profileError").hidden=false;return;}const reader=new FileReader();reader.onload=async()=>{localStorage.setItem(PHOTO_KEY,String(reader.result));$("profileAvatarPreview").replaceChildren();const img=document.createElement("img");img.src=String(reader.result);img.alt="صورتك الشخصية";$("profileAvatarPreview").appendChild(img);try{await api("wasel_chat_people?user_id=eq."+encodeURIComponent(myId),{method:"PATCH",headers:{"Prefer":"return=minimal"},body:JSON.stringify({avatar_data:String(reader.result)})});await loadPeople();}catch(e){status("الصورة محفوظة على هذا الجهاز، لكن لم يتأكد حفظها على الخادم: "+e.message,true);}};reader.readAsDataURL(file);}
 async function deleteMessage(m){if(!confirm("حذف هذه الرسالة من المحادثة؟"))return;try{await api("wasel_chat_messages?id=eq."+m.id+"&sender_id=eq."+encodeURIComponent(myId),{method:"PATCH",headers:{"Prefer":"return=minimal"},body:JSON.stringify({deleted_at:new Date().toISOString(),})});status("تم وضع علامة الحذف على الرسالة.");await loadMessages();}catch(e){status("تعذر حذف الرسالة. تحقق من تحديث قاعدة البيانات.",true);}}
+function readPendingQueue(){try{const q=JSON.parse(localStorage.getItem(PENDING_QUEUE_KEY)||"[]");return Array.isArray(q)?q:[];}catch(e){return [];}}
+function writePendingQueue(queue){localStorage.setItem(PENDING_QUEUE_KEY,JSON.stringify(queue));updateOfflineBanner();if(selectedId)renderMessages();}
+function pendingForSelected(){return readPendingQueue().filter(item=>item.recipient_id===selectedId&&item.sender_id===myId);}
+function updateOfflineBanner(){
+ let banner=$("offlineQueueBanner");if(!banner){banner=document.createElement("div");banner.id="offlineQueueBanner";banner.className="offline-queue-banner";banner.setAttribute("role","status");const anchor=document.querySelector(".app")||document.body;anchor.insertBefore(banner,anchor.firstChild);}
+ const count=readPendingQueue().length;banner.hidden=navigator.onLine&&count===0;
+ banner.textContent=!navigator.onLine?(count?"أنت غير متصل — "+count+" رسالة بانتظار الإرسال.":"أنت غير متصل بالإنترنت؛ يمكنك قراءة الرسائل المحفوظة."):(count?"عاد الاتصال — لديك "+count+" رسالة معلّقة.":"");
+ if(count&&navigator.onLine){const retry=document.createElement("button");retry.type="button";retry.textContent="إعادة المحاولة";retry.addEventListener("click",retryAllPending);banner.appendChild(retry);}
+}
+function queueTextMessage(body,recipientId,quotedId){
+ const queue=readPendingQueue();const item={id:crypto.randomUUID(),sender_id:myId,sender_name:currentName(),recipient_id:recipientId,body,reply_to:quotedId||null,created_at:new Date().toISOString(),pending:true};
+ queue.push(item);localStorage.setItem(PENDING_QUEUE_KEY,JSON.stringify(queue));updateOfflineBanner();if(selectedId===recipientId)renderMessages();return item;
+}
+async function retryPendingMessage(id){
+ const item=readPendingQueue().find(x=>x.id===id);if(!item)return;
+ if(!navigator.onLine){status("لا يوجد اتصال بالإنترنت بعد.",true);updateOfflineBanner();return;}
+ try{
+  await api("wasel_chat_messages",{method:"POST",headers:{"Prefer":"return=minimal"},body:JSON.stringify({room_id:ROOM,sender_id:item.sender_id,sender_name:item.sender_name,recipient_id:item.recipient_id,body:item.body,image_data:null,reply_to:item.reply_to})});
+  localStorage.setItem(PENDING_QUEUE_KEY,JSON.stringify(readPendingQueue().filter(x=>x.id!==id)));updateOfflineBanner();status("تم إرسال الرسالة المعلّقة.");if(selectedId===item.recipient_id)await loadMessages();renderMessages();
+ }catch(e){status(e instanceof TypeError?"تعذر الاتصال بالخادم؛ بقيت الرسالة محفوظة محليًا.":"تعذّر إرسال الرسالة: "+e.message,true);updateOfflineBanner();}
+}
+async function retryAllPending(){for(const item of readPendingQueue()){if(!navigator.onLine)break;await retryPendingMessage(item.id);}}
+function installOfflineQueue(){
+ updateOfflineBanner();
+ window.addEventListener("offline",updateOfflineBanner);
+ window.addEventListener("online",()=>{updateOfflineBanner();retryAllPending().catch(()=>{});refresh().catch(()=>{});});
+}
 async function sendText(){
  const field=$("messageText"),body=field.value.trim();if(!body||!selectedId||selectedId===myId)return;
- try{await api("wasel_chat_messages",{method:"POST",headers:{"Prefer":"return=minimal"},body:JSON.stringify({room_id:ROOM,sender_id:myId,sender_name:currentName(),recipient_id:selectedId,body,image_data:null,reply_to:replyTo})});field.value="";field.dispatchEvent(new Event("input",{bubbles:true}));clearReply();await setTyping(false);playSound();status("تم إرسال الرسالة.");await loadMessages();field.focus();}
- catch(e){status("تعذر إرسال الرسالة. شغّل schema.sql المحدّث في Supabase. "+e.message,true);}
+ const recipientId=selectedId,quotedId=replyTo;
+ if(!navigator.onLine){queueTextMessage(body,recipientId,quotedId);field.value="";field.dispatchEvent(new Event("input",{bubbles:true}));clearReply();await setTyping(false);status("حُفظت الرسالة على هذا الجهاز وستحتاج إلى الإرسال عند عودة الإنترنت.");field.focus();return;}
+ try{await api("wasel_chat_messages",{method:"POST",headers:{"Prefer":"return=minimal"},body:JSON.stringify({room_id:ROOM,sender_id:myId,sender_name:currentName(),recipient_id:recipientId,body,image_data:null,reply_to:quotedId})});field.value="";field.dispatchEvent(new Event("input",{bubbles:true}));clearReply();await setTyping(false);playSound();status("تم إرسال الرسالة.");await loadMessages();field.focus();}
+ catch(e){if(e instanceof TypeError||!navigator.onLine){queueTextMessage(body,recipientId,quotedId);field.value="";field.dispatchEvent(new Event("input",{bubbles:true}));clearReply();status("انقطع الاتصال؛ حُفظت الرسالة محليًا لإعادة المحاولة.",true);}else status("تعذر إرسال الرسالة. شغّل schema.sql المحدّث في Supabase. "+e.message,true);}
 }
 async function sendImage(file){
  if(!file||!selectedId||selectedId===myId)return;if(!["image/jpeg","image/png","image/webp","image/gif"].includes(file.type)){status("اختر صورة JPG أو PNG أو WEBP أو GIF.",true);return;}if(file.size>350*1024){status("اختر صورة أصغر من 350KB حتى يمكن إرسالها.",true);return;}const viewOnce=confirm("هل تريد إرسال هذه الصورة للعرض مرة واحدة فقط؟\\nموافق = عرض مرة واحدة، إلغاء = صورة عادية.");
@@ -290,7 +328,7 @@ function showAppLock(){if(autoLockOverlay){autoLockOverlay.hidden=false;return;}
 async function configureAutoLock(){const existing=localStorage.getItem(MASTER_PIN_KEY)||"";const code=prompt(existing?"أدخل رمز التطبيق الحالي لتغيير الإعدادات، أو اكتب إزالة لحذفه:":"أنشئ رمزًا رئيسيًا للتطبيق (4 أرقام على الأقل):");if(code===null)return;if(existing&&code==="إزالة"){localStorage.removeItem(MASTER_PIN_KEY);localStorage.setItem(AUTO_LOCK_KEY,"0");status("تم إيقاف قفل التطبيق التلقائي.");return;}if(existing&&code!=="إزالة"&&await pinHash(code)!==existing){status("الرمز الحالي غير صحيح.",true);return;}const pin=existing||prompt("أكد رمز التطبيق الجديد:");if(!existing&&(!/^\d{4,12}$/.test(code)||code!==pin)){status("استخدم رمزًا رقميًا من 4 إلى 12 رقمًا متطابقًا.",true);return;}if(!existing)localStorage.setItem(MASTER_PIN_KEY,await pinHash(code));const mins=prompt("القفل بعد كم دقيقة من عدم النشاط؟ اكتب 1 أو 5 أو 15 أو 30:","5");if(!["1","5","15","30"].includes(mins||"")){status("لم يتغير المؤقت.",true);return;}localStorage.setItem(AUTO_LOCK_KEY,mins);setupAutoLock();status("تم إعداد القفل التلقائي بعد "+mins+" دقيقة.");}
 function installPrivacyControls(){const menu=$("sidebarMenu");if(!menu||menu.dataset.privacyReady)return;menu.dataset.privacyReady="1";const add=(id,label,fn)=>{const b=document.createElement("button");b.id=id;b.type="button";b.textContent=label;b.addEventListener("click",()=>{menu.hidden=true;fn();});menu.appendChild(b);};add("quickAccountSwitch","تبديل الحسابات",switchLocalAccount);add("autoLockSetup","قفل التطبيق التلقائي",configureAutoLock);add("ghostModeToggle",localStorage.getItem(GHOST_KEY)==="on"?"إيقاف وضع التخفي":"تفعيل وضع التخفي",()=>{const on=localStorage.getItem(GHOST_KEY)!=="on";localStorage.setItem(GHOST_KEY,on?"on":"off");$("ghostModeToggle").textContent=on?"إيقاف وضع التخفي":"تفعيل وضع التخفي";status(on?"تم تفعيل التخفي على هذا الجهاز؛ لن تُحدّث حالة الاتصال أو القراءة.":"تم إيقاف وضع التخفي.");});const chatMenu=$("chatMenu");if(chatMenu&&!chatMenu.querySelector("#chatLockToggle")){const b=document.createElement("button");b.id="chatLockToggle";b.type="button";b.textContent="قفل هذه المحادثة برمز";b.addEventListener("click",()=>{chatMenu.hidden=true;setChatLock();});chatMenu.appendChild(b);}}
 
-function start(){installPrivacyControls();setupExtras();ensureLocalAccount();setupAutoLock();applyTheme(localStorage.getItem(THEME_KEY)||"blue");applyMode(localStorage.getItem(MODE_KEY)||"light");const name=currentName();$("nameSetup").hidden=Boolean(name);$("identity").textContent=name?"أهلاً، "+name:"لم تختر اسمًا بعد";$("setupNotice").hidden=false;$("setupNotice").textContent="يلزم تشغيل schema.sql المحدّث في Supabase لتفعيل الميزات الجديدة."; $("messageText").disabled=true;$("sendMessage").disabled=true;$("chatImage").disabled=true;renderPeople();if(name)refresh();setInterval(refresh,5000);}
+function start(){installPrivacyControls();installOfflineQueue();setupExtras();ensureLocalAccount();setupAutoLock();applyTheme(localStorage.getItem(THEME_KEY)||"blue");applyMode(localStorage.getItem(MODE_KEY)||"light");const name=currentName();$("nameSetup").hidden=Boolean(name);$("identity").textContent=name?"أهلاً، "+name:"لم تختر اسمًا بعد";$("setupNotice").hidden=false;$("setupNotice").textContent="يلزم تشغيل schema.sql المحدّث في Supabase لتفعيل الميزات الجديدة."; $("messageText").disabled=true;$("sendMessage").disabled=true;$("chatImage").disabled=true;renderPeople();if(name)refresh();setInterval(refresh,5000);}
 start();
 if("serviceWorker"in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(()=>{}));
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&selectedId)loadMessages().catch(()=>{});});
