@@ -463,3 +463,18 @@ html,body{background:var(--bg-main);color:var(--text-primary)}
 .bubble.mine:after{background:var(--bubble-sent)}
 .bubble:not(.mine):after{background:var(--bubble-received)}
 @media(prefers-reduced-motion:no-preference){html,body,.panel,.chatlog,.bubble,.messageform input,.messageform button{transition:background-color .18s ease,color .18s ease,border-color .18s ease}}
+
+/* Higher-specificity overrides replace legacy fixed dark-mode colors */
+:root[data-mode="dark"] .topbar,:root[data-mode="dark"] .chathead,:root[data-mode="dark"] .composerwrap,:root[data-mode="dark"] .mobile-nav{background:var(--bg-header);border-color:var(--border-color)}
+:root[data-mode="dark"] .sidebar,:root[data-mode="dark"] .chat,:root[data-mode="dark"] .panel{background:var(--bg-sidebar);border-color:var(--border-color)}
+:root[data-mode="dark"] .chatlog,:root[data-mode="dark"] #chatLog[data-background="plain"]{background-color:var(--bg-chat);background-image:none;color:var(--text-primary)}
+:root[data-mode="dark"] .bubble:not(.mine){background:var(--bubble-received);color:var(--text-primary)}
+:root[data-mode="dark"] .bubble.mine{background:var(--bubble-sent);color:var(--text-primary)}
+:root[data-mode="dark"] .identity,:root[data-mode="dark"] .mode-toggle{background:var(--bg-input);color:var(--text-primary);border-color:var(--border-color)}
+:root[data-mode="dark"] .person,:root[data-mode="dark"] .side-action,:root[data-mode="dark"] .sidebar-menu button{color:var(--text-primary)}
+:root[data-mode="dark"] .person:hover,:root[data-mode="dark"] .person.active{background:var(--bg-hover);border-color:var(--border-color)}
+:root[data-mode="dark"] .messageform input{background:var(--bg-input);color:var(--text-primary)}
+:root[data-mode="dark"] .messageform button.has-text,:root[data-mode="dark"] .namecard button,:root[data-mode="dark"] .primary-button{background:var(--accent);color:#fff}
+:root[data-mode="dark"] .namecard,:root[data-mode="dark"] .modal-card{background:var(--bg-sidebar);color:var(--text-primary);border-color:var(--border-color)}
+:root[data-mode="dark"] .namecard h2,:root[data-mode="dark"] .namecard label,:root[data-mode="dark"] .modal-card h2{color:var(--text-primary)}
+:root[data-mode="dark"] .namecard p,:root[data-mode="dark"] .namecard small{color:var(--text-secondary)}
