@@ -123,7 +123,7 @@ function handleChatMenu(action){
  $("chatMenu").hidden=true;$("chatMenuButton").setAttribute("aria-expanded","false");
  if(action==="mute"){return;}if(action==="contact"){openContactProfile();return;}
  if(action==="media"){const imgs=messages.filter(m=>m.image_data&&!m.deleted_at);if(!imgs.length){status("لا توجد صور في هذه المحادثة بعد.");return;}openImageViewer(imgs[0].image_data);return;}
- if(action==="search"){$("messageSearchInput").focus();$("messageSearchInput").scrollIntoView({block:"nearest"});return;}
+ if(action==="search"){$("chatMenu").hidden=false;$("chatMenuButton").setAttribute("aria-expanded","true");$("messageSearchInput").focus();$("messageSearchInput").scrollIntoView({block:"nearest"});return;}
  if(action==="clear"){if(!confirm("مسح عرض هذه المحادثة؟ لن نحذف الرسائل من قاعدة البيانات."))return;messages=[];lastSignature="";renderMessages();status("تم مسح عرض الرسائل الحالي فقط؛ الرسائل ما زالت على الخادم.");return;}
  if(action==="block"){if(!selectedId)return;const blocked=JSON.parse(localStorage.getItem("wasel-blocked-v1")||"[]");const next=blocked.includes(selectedId)?blocked.filter(x=>x!==selectedId):[...blocked,selectedId];localStorage.setItem("wasel-blocked-v1",JSON.stringify(next));status(next.includes(selectedId)?"تم حظر الشخص على هذا الجهاز فقط.":"تم إلغاء الحظر.");return;}
 }
