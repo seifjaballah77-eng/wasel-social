@@ -478,3 +478,17 @@ html,body{background:var(--bg-main);color:var(--text-primary)}
 :root[data-mode="dark"] .namecard,:root[data-mode="dark"] .modal-card{background:var(--bg-sidebar);color:var(--text-primary);border-color:var(--border-color)}
 :root[data-mode="dark"] .namecard h2,:root[data-mode="dark"] .namecard label,:root[data-mode="dark"] .modal-card h2{color:var(--text-primary)}
 :root[data-mode="dark"] .namecard p,:root[data-mode="dark"] .namecard small{color:var(--text-secondary)}
+
+.ui-icon{display:inline-block;width:1.2em;height:1.2em;flex:0 0 auto;vertical-align:-.22em;overflow:visible}
+button .ui-icon,.attach-option .ui-icon,.searchbox .ui-icon{pointer-events:none}
+.sidebar-icon .ui-icon,.head-icon .ui-icon{width:19px;height:19px}
+.side-action .ui-icon,.attach-button .ui-icon,.attach-option .ui-icon,.navitem .ui-icon{width:18px;height:18px}
+.welcomeicon .ui-icon{width:30px;height:30px}
+.messageform button .ui-icon{width:22px;height:22px}
+.messageform button b{display:grid;place-items:center;font-weight:400}
+.messageform button b .ui-icon{width:22px;height:22px}
+.modal-close .ui-icon{width:19px;height:19px}
+.attach-option,.side-action,.navitem,.attach-button{display:inline-flex;align-items:center;gap:7px}
+.searchbox>span{display:inline-flex;align-items:center;justify-content:center}
+.searchbox>span .ui-icon{width:17px;height:17px}
+.bubble img.emoji,.reaction-chip img.emoji,.message-actions img.emoji,.emoji-choice img.emoji{width:1.25em;height:1.25em;object-fit:contain;vertical-align:-.22em}
