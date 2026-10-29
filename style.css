@@ -795,3 +795,26 @@ body.mobile-chat-open .topbar .profile-open {
     min-height: 44px !important;
   }
 }
+
+/* Midnight black / dark navy app palette */
+:root{color-scheme:dark;background:#03060d;color:#e8efff}
+:root body{background:radial-gradient(ellipse at 78% 0%,#111e36 0,transparent 43%),linear-gradient(135deg,#03060d,#070b14 62%,#050914);color:#e8efff}
+:root .topbar{background:rgba(5,9,18,.96);border-color:#18253b}
+:root .brand{color:#eaf1ff}
+:root .panel{background:#080e1a;border-color:#1b2940;box-shadow:0 16px 50px #0008}
+:root .sidehead h1,:root .chatperson h2{color:#edf3ff}
+:root .people-count{background:#111e34;color:#9cecff}
+:root .person{color:#dce8fb}
+:root .person:hover,:root .person.active{background:#111d31;border-color:#263b5b}
+:root .personmeta small,:root .chatperson p,:root .composerhint,:root .privacyhint{color:#91a2bc}
+:root .chathead,:root .composerwrap{background:#080f1c;border-color:#1b2940}
+:root .chatlog,:root #chatLog[data-background="plain"]{background:#050a13}
+:root #chatLog[data-background="blue"]{background:linear-gradient(145deg,#091326,#050a13)}
+:root .messageform input,:root .modal-card input,:root .modal-card textarea{background:#0a1424;border-color:#253653;color:#edf3ff}
+:root .modal-card{background:#080f1c;color:#e8efff;border-color:#243550}
+:root .modal-card label,:root .modal-card h2{color:#e8efff}
+:root .side-action,:root .mode-toggle,:root .identity{background:#0d1728;border-color:#22334e;color:#dce8fb}
+:root .searchbox{display:none!important}
+.refresh-page-button{width:36px;height:36px;flex:0 0 36px;border-radius:12px;background:#0c1728;border-color:#24405d;color:#8deaff}
+.refresh-page-button:active{transform:rotate(-25deg);box-shadow:0 0 16px #42dfff55}
+#identity{display:none!important}
