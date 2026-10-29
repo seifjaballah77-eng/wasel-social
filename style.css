@@ -824,3 +824,12 @@ body.mobile-chat-open .topbar .profile-open {
 .notifications-button{width:36px;height:36px;flex:0 0 36px;border-radius:12px;background:#0c1728;border-color:#24405d;color:#9eb5d5}
 .notifications-button.is-enabled{color:#75ffbd;border-color:#167b5a;background:#06251d;box-shadow:0 0 12px #00ffaa20}
 .notifications-button:focus-visible,.refresh-page-button:focus-visible{outline:2px solid #58e8ff;outline-offset:2px}
+
+
+/* New-version prompt for visitors who already have the app open */
+.update-notice{position:relative;z-index:1000;display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;padding:10px 14px;background:linear-gradient(100deg,#102b38,#102b24);border-bottom:1px solid rgba(0,255,170,.35);color:#eafff8;font-size:13px;box-shadow:0 8px 24px rgba(0,0,0,.2)}
+.update-notice[hidden]{display:none}
+.update-notice button{border:1px solid rgba(0,255,170,.5);border-radius:9px;padding:7px 12px;background:#00ffaa;color:#032219;font:inherit;font-weight:800;cursor:pointer}
+.update-notice .update-dismiss{background:transparent;color:#d6eee7;border-color:#46635e}
+.update-notice button:focus-visible{outline:2px solid #39f5ff;outline-offset:2px}
+@media(max-width:620px){.update-notice{gap:7px;padding:8px 9px;font-size:11px}.update-notice button{padding:6px 9px}}
