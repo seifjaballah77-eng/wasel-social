@@ -666,3 +666,10 @@ button .ui-icon,.attach-option .ui-icon,.searchbox .ui-icon{pointer-events:none}
  .brand{font-size:13px}.topright .mode-toggle{font-size:0}.topright .mode-toggle .ui-icon{width:17px;height:17px}
  .chatperson h2{max-width:105px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.head-icon{width:26px;height:26px}
 }
+
+/* Hide the Seif Messages branding while a mobile conversation is open */
+@media (max-width: 620px) {
+  body.mobile-chat-open .topbar .brand {
+    display: none !important;
+  }
+}
