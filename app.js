@@ -207,7 +207,7 @@ async function loadPeople(){
  try{const recent=await api("wasel_chat_messages?select=id,sender_id,recipient_id,body,image_data,created_at,read_at,delivered_at,deleted_at,room_id&room_id=eq."+ROOM+"&order=created_at.desc&limit=1000");lastMessagesByUser={};for(const m of recent){const other=m.sender_id===myId?m.recipient_id:m.sender_id;if(!other||other===myId||lastMessagesByUser[other])continue;lastMessagesByUser[other]=m;}}catch(e){console.warn("Last-message previews unavailable",e);lastMessagesByUser={};}
  const unread=await api("wasel_chat_messages?select=id,sender_id&recipient_id=eq."+encodeURIComponent(myId)+"&read_at=is.null&deleted_at=is.null&room_id=eq."+ROOM+"&limit=1000");
  unreadCounts={};for(const m of unread)unreadCounts[m.sender_id]=(unreadCounts[m.sender_id]||0)+1;
- renderPeople();
+ renderPeople();updateChatSubtitle();
 }
 function renderPeople(){
  const root=$("people");root.replaceChildren();const query=$("peopleSearch").value.trim().toLocaleLowerCase(),now=Date.now(),favorites=JSON.parse(localStorage.getItem(FAVORITES_KEY)||"[]"),onlyFavorites=$("favoritesToggle")?.getAttribute("aria-pressed")==="true";
@@ -228,10 +228,18 @@ function renderPeople(){
   b.addEventListener("click",()=>selectPerson(p.user_id));const star=document.createElement("button");star.type="button";star.className="favorite-star"+(favorites.includes(p.user_id)?" is-favorite":"");star.innerHTML=uiIcon("star");star.title=favorites.includes(p.user_id)?"إزالة من المفضّلين":"إضافة إلى المفضّلين";star.setAttribute("aria-label",star.title);star.addEventListener("click",e=>{e.stopPropagation();const list=JSON.parse(localStorage.getItem(FAVORITES_KEY)||"[]");const next=list.includes(p.user_id)?list.filter(x=>x!==p.user_id):[...list,p.user_id];localStorage.setItem(FAVORITES_KEY,JSON.stringify(next));renderPeople();});b.appendChild(star);root.appendChild(b);
  }
 }
+function updateChatSubtitle(){
+ const subtitle=$("chatSubtitle");if(!subtitle)return;
+ const p=people.find(x=>x.user_id===selectedId);
+ if(!selectedId||!p){subtitle.textContent="رسائل وصور محفوظة على هذا الجهاز";subtitle.classList.remove("typing-now");return;}
+ const typing=selectedId!==myId&&Boolean(p.is_typing)&&p.typing_to===myId;
+ subtitle.textContent=typing?"يكتب الآن…":Date.now()-new Date(p.last_seen).getTime()<90000?"متصل الآن":"آخر ظهور: "+timeLabel(p.last_seen);
+ subtitle.classList.toggle("typing-now",typing);
+}
 async function selectPerson(id){
  if(!canContact(id)){contactRestrictionNotice();return;}
  if(id!==myId&&!await unlockChatIfNeeded(id))return;selectedId=id;localStorage.setItem(SELECTED_KEY,id);document.body.classList.add("mobile-chat-open");document.querySelectorAll(".navitem").forEach(n=>n.classList.toggle("active",n.dataset.view==="people"));
- const p=people.find(x=>x.user_id===id);$("chatTitle").textContent=p?(id===myId?"ملاحظاتي":p.display_name):"المحادثة";$("chatSubtitle").textContent=p?(id!==myId&&p.is_typing&&p.typing_to===myId?"يكتب الآن…":Date.now()-new Date(p.last_seen).getTime()<90000?"متصل الآن":"آخر ظهور: "+timeLabel(p.last_seen)):"";
+ const p=people.find(x=>x.user_id===id);$("chatTitle").textContent=p?(id===myId?"ملاحظاتي":p.display_name):"المحادثة";updateChatSubtitle();
  applyChatBackground();const muteMap=JSON.parse(localStorage.getItem(MUTE_KEY)||"{}");$("muteChat").textContent=muteMap[id]?uiIcon("bellOff")+" إلغاء كتم المحادثة":uiIcon("bell")+" كتم المحادثة";$("chatAvatar").replaceChildren();if(p?.avatar_data){const img=document.createElement("img");img.src=p.avatar_data;img.alt="";$("chatAvatar").appendChild(img);}else $("chatAvatar").textContent=initials(p?.display_name||"S");
  $("messageText").disabled=!p||id===myId;$("sendMessage").disabled=!p||id===myId;$("chatImage").disabled=!p||id===myId;$("cameraImage").disabled=!p||id===myId;$("chatDocument").disabled=!p||id===myId;$("chatAudio").disabled=!p||id===myId;
  status(id===myId?"هذه مساحتك الشخصية. اختر صديقك لإرسال رسالة.":"المحادثة مع "+(p?.display_name||"صديقك"));renderPeople();lastSignature="";await loadMessages();
