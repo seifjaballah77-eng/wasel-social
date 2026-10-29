@@ -770,3 +770,28 @@ button .ui-icon,.attach-option .ui-icon,.searchbox .ui-icon{pointer-events:none}
   .attachment-menu { position: absolute; z-index: 40; right: 8px; bottom: calc(100% - 4px); }
   .emoji-panel { position: absolute !important; z-index: 45; left: 8px; right: 8px; bottom: calc(100% + 4px); width: auto !important; max-width: none !important; margin: 0 !important; }
 }
+
+
+/* Cleaner conversation view */
+body.mobile-chat-open .topbar .profile-open {
+  display: none !important;
+}
+.chatperson h2 {
+  font-size: 13px;
+}
+@media (max-width: 620px) {
+  body.mobile-chat-open .topbar .profile-open {
+    display: none !important;
+  }
+  .chatperson h2 {
+    font-size: 11px !important;
+    max-width: 48vw;
+  }
+  .composerwrap {
+    padding-top: 3px !important;
+    padding-bottom: calc(2px + env(safe-area-inset-bottom)) !important;
+  }
+  .messageform {
+    min-height: 44px !important;
+  }
+}
