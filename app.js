@@ -23,7 +23,19 @@ async function api(path,options={}){
  const raw=await response.text();return raw?JSON.parse(raw):[];
 }
 
-let activeCallApi=null,callScriptPromise=null;
+let activeCallApi=null,callScriptPromise=null,activeCallInfo=null,callClockTimer=null;
+const CALL_LOG_PREFIX="[[SEIF_CALL_LOG]]";
+function formatCallDuration(seconds){const n=Math.max(0,Number(seconds)||0);return String(Math.floor(n/60)).padStart(2,"0")+":"+String(n%60).padStart(2,"0");}
+async function saveCallLog(info){
+ if(!info||info.saved)return;info.saved=true;
+ const duration=info.joinedAt?Math.max(0,Math.floor((Date.now()-info.joinedAt)/1000)):0;
+ const outcome=info.peerJoined?"completed":"missed";
+ const body=[CALL_LOG_PREFIX,info.kind,outcome,String(duration)].join("|");
+ try{
+  await api("wasel_chat_messages",{method:"POST",headers:{"Prefer":"return=minimal"},body:JSON.stringify({room_id:ROOM,sender_id:myId,sender_name:currentName()||"مستخدم",recipient_id:info.peerId,body,image_data:null})});
+  if(selectedId===info.peerId)await loadMessages();
+ }catch(e){console.warn("Call history could not be saved",e);status("انتهت المكالمة، لكن تعذّر حفظها في سجل الدردشة. تحقق من صلاحيات Supabase.",true);}
+}
 function ensureCallModal(){
  let overlay=$("callModal");if(overlay)return overlay;
  overlay=document.createElement("div");overlay.id="callModal";overlay.className="modal-overlay call-overlay";overlay.hidden=true;
@@ -44,24 +56,58 @@ function loadJitsiScript(){
 async function startCall(kind){
  if(!selectedId||selectedId===myId){status("اختر صديقًا من قائمة الأشخاص أولًا.",true);return;}
  const person=people.find(p=>p.user_id===selectedId);if(!person){status("لم يتم العثور على جهة الاتصال. حدّث قائمة الأشخاص أولًا.",true);return;}
- const overlay=ensureCallModal();overlay.hidden=false;$("callModalTitle").textContent=(kind==="video"?"مكالمة فيديو مع ":"مكالمة صوتية مع ")+(person.display_name||"صديقك");$("callModalNote").textContent="للانضمام من الجهاز الآخر، افتح المحادثة نفسها واضغط زر الاتصال نفسه. هذه النسخة التجريبية لا ترسل رنينًا تلقائيًا بعد.";
+ if(activeCallApi||activeCallInfo){status("هناك مكالمة جارية بالفعل.",true);return;}
+ const overlay=ensureCallModal();overlay.hidden=false;
+ $("callModalTitle").textContent=(kind==="video"?"مكالمة فيديو مع ":"مكالمة صوتية مع ")+(person.display_name||"صديقك");
+ $("callModalNote").textContent="جارٍ الاتصال… يجب أن يفتح صديقك الموقع ويضغط زر الاتصال نفسه للانضمام. الرنين التلقائي غير متاح بعد.";
  const mount=$("jitsiMount");mount.replaceChildren();status("جارٍ الاتصال بخدمة المكالمات…");
+ activeCallInfo={peerId:selectedId,peerName:person.display_name||"صديقك",kind,startedAt:Date.now(),joinedAt:0,peerJoined:false,saved:false};
  try{
   await loadJitsiScript();
-  if(overlay.hidden)return;
+  if(overlay.hidden||!activeCallInfo)return;
   const roomName="seifmessages-"+[myId,selectedId].sort().join("-");
   activeCallApi=new window.JitsiMeetExternalAPI("meet.jit.si",{roomName,width:"100%",height:"100%",parentNode:mount,lang:"ar",userInfo:{displayName:currentName()||"مستخدم"},configOverwrite:{startWithAudioMuted:false,startWithVideoMuted:kind==="audio",prejoinConfig:{enabled:false},disableDeepLinking:true},interfaceConfigOverwrite:{TOOLBAR_BUTTONS:kind==="audio"?["microphone","hangup","chat","settings","tileview"]:["microphone","camera","desktop","hangup","chat","settings","tileview"]}});
-  activeCallApi.addListener("videoConferenceJoined",()=>status("أنت داخل المكالمة. اسم الغرفة مشترك بين الطرفين."));
-  activeCallApi.addListener("participantJoined",()=>{$("callModalNote").textContent="انضم صديقك إلى المكالمة.";status("انضم الطرف الآخر إلى المكالمة.");});
+  activeCallApi.addListener("videoConferenceJoined",()=>{if(activeCallInfo)activeCallInfo.joinedAt=Date.now();status("أنت داخل المكالمة.");$("callModalNote").textContent="مدة المكالمة "+formatCallDuration(0);clearInterval(callClockTimer);callClockTimer=setInterval(()=>{if(activeCallInfo&&activeCallInfo.joinedAt)$("callModalNote").textContent="مدة المكالمة "+formatCallDuration(Math.floor((Date.now()-activeCallInfo.joinedAt)/1000));},1000);});
+  activeCallApi.addListener("participantJoined",()=>{if(activeCallInfo)activeCallInfo.peerJoined=true;$("callModalNote").textContent="انضم صديقك إلى المكالمة.";status("انضم الطرف الآخر إلى المكالمة.");});
   activeCallApi.addListener("participantLeft",()=>{$("callModalNote").textContent="غادر أحد المشاركين المكالمة.";});
-  activeCallApi.addListener("readyToClose",endCall);
+  activeCallApi.addListener("readyToClose",()=>endCall());
   activeCallApi.addListener("errorOccurred",e=>{status("حدث خطأ في الاتصال: "+(e?.message||"تحقق من صلاحيات الكاميرا والميكروفون."),true);});
- }catch(e){endCall();status("تعذر بدء المكالمة: "+e.message,true);}
+ }catch(e){status("تعذر بدء المكالمة: "+e.message,true);await endCall();}
 }
-function endCall(){
+async function endCall(){
+ const info=activeCallInfo;activeCallInfo=null;clearInterval(callClockTimer);callClockTimer=null;
  const apiInstance=activeCallApi;activeCallApi=null;
  if(apiInstance){try{apiInstance.executeCommand("hangup");}catch(e){}try{apiInstance.dispose();}catch(e){}}
- const overlay=$("callModal");if(overlay)overlay.hidden=true;const mount=$("jitsiMount");if(mount)mount.replaceChildren();status("انتهت المكالمة.");
+ const overlay=$("callModal");if(overlay)overlay.hidden=true;const mount=$("jitsiMount");if(mount)mount.replaceChildren();
+ if(info)await saveCallLog(info);
+ status("انتهت المكالمة.");
+}
+async function openCallsHistory(){
+ let overlay=$("callsHistoryModal");
+ if(!overlay){
+  overlay=document.createElement("div");overlay.id="callsHistoryModal";overlay.className="modal-overlay calls-history-overlay";
+  const card=document.createElement("section");card.className="calls-history-card";
+  const head=document.createElement("div");head.className="calls-history-head";
+  const title=document.createElement("h2");title.textContent="سجل المكالمات";
+  const close=document.createElement("button");close.type="button";close.className="call-close";close.textContent="إغلاق";close.addEventListener("click",()=>overlay.hidden=true);
+  head.append(title,close);const list=document.createElement("div");list.id="callsHistoryList";list.className="calls-history-list";card.append(head,list);overlay.append(card);overlay.addEventListener("click",e=>{if(e.target===overlay)overlay.hidden=true;});document.body.append(overlay);
+ }
+ overlay.hidden=false;const list=$("callsHistoryList");list.textContent="جارٍ تحميل سجل المكالمات…";
+ try{
+  const rows=await api("wasel_chat_messages?select=id,sender_id,sender_name,recipient_id,body,created_at&room_id=eq."+ROOM+"&body=like."+encodeURIComponent(CALL_LOG_PREFIX+"*")+"&order=created_at.desc&limit=100");
+  list.replaceChildren();
+  const relevant=rows.filter(m=>m.sender_id===myId||m.recipient_id===myId);
+  if(!relevant.length){list.textContent="لا توجد مكالمات مسجلة بعد.";return;}
+  for(const m of relevant){
+   const bits=(m.body||"").split("|");if(bits[0]!==CALL_LOG_PREFIX)continue;
+   const item=document.createElement("button");item.type="button";item.className="call-history-item";
+   const icon=document.createElement("span");icon.className="call-history-icon";icon.textContent=bits[1]==="video"?"▣":"☎";
+   const details=document.createElement("span");details.className="call-history-details";
+   const title=document.createElement("strong");title.textContent=(bits[1]==="video"?"مكالمة فيديو":"مكالمة صوتية")+" · "+(bits[2]==="completed"?"تمت":"لم يتم الرد");
+   const sub=document.createElement("small");const peer=m.sender_id===myId?m.recipient_id:m.sender_id;const person=people.find(p=>p.user_id===peer);sub.textContent=(person?.display_name||m.sender_name||"جهة اتصال")+" · "+timeLabel(m.created_at)+(bits[2]==="completed"?" · "+formatCallDuration(bits[3]):"");
+   details.append(title,sub);item.append(icon,details);item.addEventListener("click",()=>{overlay.hidden=true;selectPerson(peer);});list.append(item);
+  }
+ }catch(e){list.textContent="تعذّر تحميل سجل المكالمات. تحقق من صلاحيات قراءة الرسائل في Supabase.";}
 }
 
 const UI_ICON_PATHS={"chevron":"<path d=\"m7 10 5 5 5-5\"/>","status":"<circle cx=\"12\" cy=\"12\" r=\"8\"/><circle cx=\"12\" cy=\"12\" r=\"3\"/>","edit":"<path d=\"m14 5 5 5M4 20l4-.8L19 8a2 2 0 0 0-3-3L5 16Z\"/>","more":"<circle cx=\"12\" cy=\"5\" r=\"1\"/><circle cx=\"12\" cy=\"12\" r=\"1\"/><circle cx=\"12\" cy=\"19\" r=\"1\"/>","search":"<circle cx=\"10\" cy=\"10\" r=\"7\"/><path d=\"m15 15 5 5\"/>","phone":"<path d=\"M7 3H5a2 2 0 0 0-2 2 16 16 0 0 0 14 14 2 2 0 0 0 2-2v-2l-5-2-2 2a12 12 0 0 1-5-5l2-2Z\"/>","video":"<rect x=\"3\" y=\"6\" width=\"13\" height=\"12\" rx=\"2\"/><path d=\"m16 10 5-3v10l-5-3\"/>","mail":"<rect x=\"3\" y=\"5\" width=\"18\" height=\"14\" rx=\"2\"/><path d=\"m4 7 8 6 8-6\"/>","paperclip":"<path d=\"m8 12 7-7a3 3 0 0 1 4 4l-8 8a5 5 0 0 1-7-7l8-8\"/>","image":"<rect x=\"3\" y=\"4\" width=\"18\" height=\"16\" rx=\"2\"/><circle cx=\"8\" cy=\"9\" r=\"1.5\"/><path d=\"m21 15-5-5L5 20\"/>","camera":"<path d=\"M4 7h3l2-3h6l2 3h3v13H4Z\"/><circle cx=\"12\" cy=\"13\" r=\"4\"/>","file":"<path d=\"M7 3h7l5 5v13H7zM14 3v5h5M10 13h6M10 17h6\"/>","music":"<path d=\"M9 18V5l12-2v13\"/><circle cx=\"6\" cy=\"18\" r=\"3\"/><circle cx=\"18\" cy=\"16\" r=\"3\"/>","pin":"<path d=\"m16 3 5 5-4 1-4 4 2 5-2 2-4-6-5-1 4-4 1-4Z\"/>","contact":"<circle cx=\"12\" cy=\"7\" r=\"4\"/><path d=\"M4 21a8 8 0 0 1 16 0\"/>","poll":"<path d=\"M4 19h16M6 16V9m6 7V4m6 12v-5\"/>","chat":"<path d=\"M20 11.5a7.5 7.5 0 0 1-8 7.5 8.6 8.6 0 0 1-3.7-.8L4 20l1.3-3.5A7.2 7.2 0 0 1 4 12c0-4.4 3.6-8 8-8s8 3.1 8 7.5Z\"/>","people":"<circle cx=\"9\" cy=\"8\" r=\"3.5\"/><path d=\"M2 20a7 7 0 0 1 14 0M16 5a3.5 3.5 0 0 1 0 7M18 14a5 5 0 0 1 4 5\"/>","settings":"<circle cx=\"12\" cy=\"12\" r=\"3\"/><path d=\"M19 15 21 16l-2 3-2-1-2 1v2h-4v-2l-2-1-2 1-2-3 2-1v-2l-2-1 2-3 2 1 2-1V7h4v2l2 1 2-1 2 3-2 1Z\"/>","send":"<path d=\"m22 2-7 20-4-9-9-4Z\"/><path d=\"M22 2 11 13\"/>","mic":"<rect x=\"9\" y=\"3\" width=\"6\" height=\"12\" rx=\"3\"/><path d=\"M5 11a7 7 0 0 0 14 0M12 18v3m-4 0h8\"/>","bell":"<path d=\"M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4\"/>","bellOff":"<path d=\"M18 8a6 6 0 0 0-11-3M6 8c0 7-3 7-3 9h14M10 21h4M3 3l18 18\"/>","star":"<path d=\"m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9Z\"/>","close":"<path d=\"m6 6 12 12M18 6 6 18\"/>","smile":"<circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"M8 14s1.5 2 4 2 4-2 4-2M9 9h.01M15 9h.01\"/>","reply":"<path d=\"M9 14 4 9l5-5\"/><path d=\"M4 9h9a7 7 0 0 1 7 7v2\"/>","sun":"<circle cx=\"12\" cy=\"12\" r=\"4\"/><path d=\"M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42\"/>"};
@@ -74,6 +120,7 @@ function setupExtras(){
  $("cameraImage")?.addEventListener("change",e=>{if(e.target.files?.[0])sendImage(e.target.files[0]);e.target.value="";});
  menu?.querySelectorAll("[data-attachment]").forEach(b=>b.addEventListener("click",()=>{menu.hidden=true;if(b.dataset.attachment==="location")status("مشاركة الموقع غير مفعّلة بعد.");else if(b.dataset.attachment==="contact")status("مشاركة جهات الاتصال غير مفعّلة بعد.");else status("إنشاء استطلاع رأي يحتاج جداول خاصة في قاعدة البيانات.");}));
  document.querySelectorAll(".head-icon").forEach(b=>{if(b.dataset.ready)return;b.dataset.ready="1";b.addEventListener("click",()=>{if(b.id==="chatMenuButton"){const m=$("chatMenu");m.hidden=!m.hidden;b.setAttribute("aria-expanded",String(!m.hidden));return;}startCall(b.id==="videoCall"?"video":"audio");});});
+ const callsButton=$("callsHistoryButton");if(callsButton&&!callsButton.dataset.ready){callsButton.dataset.ready="1";callsButton.addEventListener("click",openCallsHistory);}
  $("chatMenu")?.querySelectorAll("[data-menu-action]").forEach(b=>{if(b.dataset.ready)return;b.dataset.ready="1";b.addEventListener("click",()=>handleChatMenu(b.dataset.menuAction));});
  const tools=document.querySelector(".composer-tools");
  if(!$("emojiPicker")){
@@ -170,7 +217,17 @@ function renderMessages(){
  const byId=new Map(messages.map(m=>[String(m.id),m]));
  let previousDay="";for(const m of visibleMessages){
   const dayKey=new Date(m.created_at).toLocaleDateString("en-CA");if(dayKey!==previousDay){const divider=document.createElement("div");divider.className="day-divider";const today=new Date().toLocaleDateString("en-CA"),yesterday=new Date(Date.now()-86400000).toLocaleDateString("en-CA");divider.textContent=dayKey===today?"اليوم":dayKey===yesterday?"الأمس":new Date(m.created_at).toLocaleDateString("ar-TN",{year:"numeric",month:"long",day:"numeric"});log.appendChild(divider);previousDay=dayKey;}
-  const bubble=document.createElement("div");bubble.className="bubble "+(m.sender_id===myId?"mine":"")+(m.deleted_at?" deleted":"");if(!m.deleted_at&&m.body&&isGiantEmoji(m.body))bubble.classList.add("giant-emoji");
+  const bubble=document.createElement("div");bubble.className="bubble "+(m.sender_id===myId?"mine":"")+(m.deleted_at?" deleted":"");
+  if(!m.deleted_at&&(m.body||"").startsWith(CALL_LOG_PREFIX)){
+   const bits=m.body.split("|");bubble.classList.add("call-history-bubble");
+   const icon=document.createElement("span");icon.className="call-bubble-icon";icon.textContent=bits[1]==="video"?"▣":"☎";
+   const details=document.createElement("span");details.className="call-bubble-details";
+   const heading=document.createElement("strong");heading.textContent=bits[1]==="video"?"مكالمة فيديو":"مكالمة صوتية";
+   const sub=document.createElement("small");sub.textContent=bits[2]==="completed"?"تمت المكالمة · "+formatCallDuration(bits[3]):"لم يتم الرد";
+   details.append(heading,sub);bubble.append(icon,details);
+   const stamp=document.createElement("span");stamp.className="stamp";stamp.textContent=timeLabel(m.created_at);bubble.append(stamp);log.appendChild(bubble);continue;
+  }
+  if(!m.deleted_at&&m.body&&isGiantEmoji(m.body))bubble.classList.add("giant-emoji");
   if(m.reply_to){const original=byId.get(String(m.reply_to));const q=document.createElement("div");q.className="quoted-message";q.textContent="↪ "+(original?(original.deleted_at?"تم حذف الرسالة":original.body||"صورة"):"رسالة سابقة");bubble.appendChild(q);}
   if(m.deleted_at){const gone=document.createElement("div");gone.className="deleted-text";gone.textContent="تم حذف هذه الرسالة";bubble.appendChild(gone);}
   else {if(m.audio_data){const audio=document.createElement("audio");audio.controls=true;audio.preload="metadata";audio.src=m.audio_data;audio.className="voice-message-player";audio.setAttribute("aria-label","رسالة صوتية");bubble.appendChild(audio);}if(m.image_data){if(m.view_once&&m.viewed_at&&m.sender_id!==myId){const used=document.createElement("div");used.className="view-once-used";used.textContent="✓ تم فتح الصورة لمرة واحدة";bubble.appendChild(used);}else{const img=document.createElement("img");img.alt=m.view_once?"صورة للعرض مرة واحدة — اضغط للفتح":"صورة مرسلة — اضغط للتكبير";img.loading="lazy";img.src=m.image_data;img.style.maxWidth="100%";img.style.borderRadius="12px";img.tabIndex=0;img.role="button";img.addEventListener("click",()=>m.view_once&&m.sender_id!==myId?openViewOnceImage(m):openImageViewer(m.image_data));img.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();m.view_once&&m.sender_id!==myId?openViewOnceImage(m):openImageViewer(m.image_data);}});bubble.appendChild(img);}}if(m.body){const body=document.createElement("div");body.className="formatted-message";appendFormattedText(body,m.body);parseEmoji(body);bubble.appendChild(body);}}
