@@ -238,7 +238,7 @@ function updateChatSubtitle(){
 }
 async function selectPerson(id){
  if(!canContact(id)){contactRestrictionNotice();return;}
- if(id!==myId&&!await unlockChatIfNeeded(id))return;selectedId=id;localStorage.setItem(SELECTED_KEY,id);document.body.classList.add("mobile-chat-open");document.querySelectorAll(".navitem").forEach(n=>n.classList.toggle("active",n.dataset.view==="people"));
+ if(id!==myId&&!await unlockChatIfNeeded(id))return;selectedId=id;localStorage.setItem(SELECTED_KEY,id);if(window.matchMedia("(max-width: 620px)").matches&&!document.body.classList.contains("mobile-chat-open")){history.pushState({seifChatView:true},"",location.href);mobileChatHistoryActive=true;}document.body.classList.add("mobile-chat-open");document.querySelectorAll(".navitem").forEach(n=>n.classList.toggle("active",n.dataset.view==="people"));
  const p=people.find(x=>x.user_id===id);$("chatTitle").textContent=p?(id===myId?"ملاحظاتي":p.display_name):"المحادثة";updateChatSubtitle();
  applyChatBackground();const muteMap=JSON.parse(localStorage.getItem(MUTE_KEY)||"{}");$("muteChat").textContent=muteMap[id]?uiIcon("bellOff")+" إلغاء كتم المحادثة":uiIcon("bell")+" كتم المحادثة";$("chatAvatar").replaceChildren();if(p?.avatar_data){const img=document.createElement("img");img.src=p.avatar_data;img.alt="";$("chatAvatar").appendChild(img);}else $("chatAvatar").textContent=initials(p?.display_name||"S");
  $("messageText").disabled=!p||id===myId;$("sendMessage").disabled=!p||id===myId;$("chatImage").disabled=!p||id===myId;$("cameraImage").disabled=!p||id===myId;$("chatDocument").disabled=!p||id===myId;$("chatAudio").disabled=!p||id===myId;
@@ -401,7 +401,9 @@ async function sendImage(file){
 }
 async function setTyping(on){if(localStorage.getItem(GHOST_KEY)==="on"||!currentName()||!selectedId||selectedId===myId)return;try{await api("wasel_chat_people?user_id=eq."+encodeURIComponent(myId),{method:"PATCH",headers:{"Prefer":"return=minimal"},body:JSON.stringify({is_typing:on,typing_to:on?selectedId:null,last_seen:new Date().toISOString()})});}catch(e){}}
 function enableMobileSwipeNavigation(){let startX=0,startY=0;const chat=$("chatLog");chat.addEventListener("touchstart",e=>{if(!e.touches||e.touches.length!==1)return;startX=e.touches[0].clientX;startY=e.touches[0].clientY;},{passive:true});chat.addEventListener("touchend",e=>{if(!e.changedTouches||!e.changedTouches.length)return;const dx=e.changedTouches[0].clientX-startX,dy=e.changedTouches[0].clientY-startY;if(window.matchMedia("(max-width: 620px)").matches&&document.body.classList.contains("mobile-chat-open")&&dx>100&&Math.abs(dy)<65){mobileBack();}},{passive:true});}enableMobileSwipeNavigation();
-function mobileBack(){document.body.classList.remove("mobile-chat-open");document.querySelectorAll(".navitem").forEach(n=>n.classList.toggle("active",n.dataset.view==="people"));}
+let mobileChatHistoryActive=false;
+function mobileBack(fromPopState=false){if(!fromPopState&&mobileChatHistoryActive){history.back();return;}mobileChatHistoryActive=false;document.body.classList.remove("mobile-chat-open");document.querySelectorAll(".navitem").forEach(n=>n.classList.toggle("active",n.dataset.view==="people"));}
+window.addEventListener("popstate",()=>{if(mobileChatHistoryActive){mobileBack(true);}});
 $("mobileBack").addEventListener("click",mobileBack);
 $("statusShortcut").addEventListener("click",()=>status("ميزة الحالات اليومية لم تُفعّل بعد."));
 $("newChatShortcut").addEventListener("click",()=>{const first=$("people").querySelector(".person");if(first)first.click();else status("لا يوجد أشخاص بعد. اطلب من صديقك فتح الموقع وكتابة اسمه.");});
