@@ -836,3 +836,53 @@ body.mobile-chat-open .topbar .profile-open {
 
 /* Live typing indicator */
 .chathead #chatSubtitle.typing-now{color:#00b8a9;font-weight:700}.chathead #chatSubtitle.typing-now::after{content:"";display:inline-block;width:5px;height:5px;margin-inline-start:6px;border-radius:50%;background:currentColor;animation:typingPulse 0.7s ease-in-out infinite alternate}@keyframes typingPulse{from{opacity:.35;transform:scale(.75)}to{opacity:1;transform:scale(1.15)}}
+
+
+/* Compact message bubble and inline options chevron */
+.bubble{position:relative;font-size:12.6px;padding:7px 9px}
+.message-actions-toggle{
+  position:absolute;
+  inset-inline-start:-15px;
+  top:50%;
+  transform:translateY(-50%);
+  width:14px;
+  height:20px;
+  min-width:14px;
+  margin:0;
+  padding:0;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  border:0;
+  border-radius:5px;
+  background:transparent;
+  color:var(--text-secondary);
+  font-size:0;
+  line-height:1;
+  opacity:.68;
+}
+.message-actions-toggle .ui-icon{display:none!important}
+.message-actions-toggle::before{
+  content:"‹";
+  display:block;
+  font-family:Arial,sans-serif;
+  font-size:20px;
+  font-weight:400;
+  line-height:1;
+  transform:rotate(180deg);
+}
+.message-actions-toggle:hover,
+.message-actions-toggle[aria-expanded="true"]{
+  opacity:1;
+  color:var(--neon-mint,#00ffaa);
+  background:rgba(0,255,170,.08);
+}
+.chathead{padding-top:5px;padding-bottom:5px}
+.chatperson h2{font-size:12.8px}
+@media(max-width:620px){
+  .bubble{font-size:12.6px;padding:7px 9px}
+  .message-actions-toggle{inset-inline-start:-13px;width:13px;min-width:13px}
+  .message-actions-toggle::before{font-size:18px}
+  .chathead{min-height:51px;height:51px;padding-top:5px;padding-bottom:5px}
+  .chatperson h2{font-size:10.9px!important}
+}
