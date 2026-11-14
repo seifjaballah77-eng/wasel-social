@@ -68,7 +68,7 @@ class MainActivity : ComponentActivity() {
         val title = TextView(this).apply { text = "Seif Messages"; textSize = 26f; setPadding(4, 12, 4, 8) }
         val onlineButton = Button(this).apply {
             text = "فتح المراسلة عبر الإنترنت"
-            setOnClickListener { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://seifjaballah77-eng.github.io/wasel-social/"))) }
+            setOnClickListener { startActivity(Intent(this@MainActivity, WebChatActivity::class.java)) }
         }
         status = TextView(this).apply { text = "اربط الهاتفين عبر Bluetooth أولًا من إعدادات Android."; textSize = 14f; setPadding(4, 8, 4, 8) }
         connectionStatus = TextView(this).apply { text = "غير متصل"; textSize = 15f; setPadding(4, 8, 4, 8) }
