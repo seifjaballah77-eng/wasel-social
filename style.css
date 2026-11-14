@@ -915,3 +915,16 @@ body.mobile-chat-open .topbar .profile-open {
 .download-sub{display:block;margin-top:8px;color:#82dccc!important;font-size:11px;text-align:center}
 .downloads-footnote{margin:15px 0 0;padding:12px;border:1px solid #35415a;border-radius:12px;color:#aebfd4;font-size:11px;line-height:1.8}
 @media(max-width:520px){.downloads-panel{padding:21px 14px;border-radius:17px}.downloads-panel h2{font-size:23px}.downloads-grid{grid-template-columns:1fr;gap:9px}.download-card{padding:13px}.download-card p{min-height:0}.downloads-overlay{padding:9px}}
+
+
+/* Floating in-call mini window: keeps the Jitsi session mounted while browsing */
+.call-overlay.is-minimized{align-items:flex-end;justify-content:flex-end;padding:14px;background:transparent;pointer-events:none}
+.call-overlay.is-minimized .call-card{pointer-events:auto;width:min(300px,calc(100vw - 24px));height:112px;max-height:112px;margin:0 0 68px 0;border-radius:16px;overflow:hidden;box-shadow:0 14px 42px #000b,0 0 20px #00ffaa22}
+.call-overlay.is-minimized .call-card-head{min-height:43px;padding:8px 10px;gap:6px}
+.call-overlay.is-minimized #callModalTitle{font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.call-mini-toggle{border:1px solid #31516f;border-radius:9px;background:#132943;color:#dff8ff;padding:7px 9px;font:inherit;font-size:11px;cursor:pointer;white-space:nowrap}
+.call-overlay.is-minimized .call-note{margin:0;padding:4px 10px;font-size:11px}
+.call-overlay.is-minimized .jitsi-mount{height:1px!important;min-height:1px!important;overflow:hidden;opacity:.01}
+.voice-speed-button{display:inline-flex;align-items:center;justify-content:center;margin:5px 4px 0 0;padding:4px 9px;border:1px solid #31516f;border-radius:8px;background:#102139;color:#9fffe2;font:inherit;font-size:11px;font-weight:800;cursor:pointer}
+.voice-speed-button:focus-visible,.call-mini-toggle:focus-visible{outline:2px solid #58e8ff;outline-offset:2px}
+@media(max-width:620px){.call-overlay.is-minimized{padding:8px}.call-overlay.is-minimized .call-card{margin-bottom:68px;width:min(270px,calc(100vw - 16px))}}
