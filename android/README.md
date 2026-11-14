@@ -15,9 +15,10 @@ Open the `android` folder in Android Studio (JDK 17; Android SDK 35), allow Grad
 - Native Android project scaffold: added.
 - Always-visible Internet and Bluetooth/nearby choices: added.
 - Runtime permissions for nearby devices: added.
-- Nearby advertising/discovery and connection handshake: added.
-- Small test payload after connection: added.
-- Real-time voice/video over the offline link: **not implemented yet**.
+- Nearby advertising/discovery with a single deterministic connection initiator: implemented.
+- Runtime microphone permission and incoming-call accept/reject controls: implemented.
+- Experimental two-way 16 kHz PCM voice streaming over Nearby stream payloads: implemented; requires testing on two physical Android phones.
+- Offline video calling is not implemented. Nearby selects Bluetooth/BLE or local Wi-Fi depending on device support; Bluetooth-only latency and bandwidth vary.
 
 The browser/PWA cannot transparently use Android Nearby Connections APIs. Offline calling must be implemented in this native app, including audio/video capture, encoding, transport, and playback. Bluetooth-only bandwidth is not a dependable video transport; Nearby Connections can select a local Wi-Fi transport when available. When only Bluetooth is available, audio should be prioritized and video should only be enabled when the negotiated transport can sustain it.
 
