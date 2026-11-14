@@ -886,3 +886,13 @@ body.mobile-chat-open .topbar .profile-open {
   .chathead{min-height:51px;height:51px;padding-top:5px;padding-bottom:5px}
   .chatperson h2{font-size:10.9px!important}
 }
+
+
+/* One-tap PWA install action */
+.install-app-button{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:36px;padding:7px 12px;border:1px solid rgba(0,255,170,.45);border-radius:11px;background:linear-gradient(135deg,rgba(0,255,170,.16),rgba(57,245,255,.08));color:#8fffe0;font:inherit;font-size:12px;font-weight:800;white-space:nowrap;cursor:pointer;box-shadow:0 0 13px rgba(0,255,170,.08);transition:background .2s,border-color .2s,transform .2s}
+.install-app-button:hover,.install-app-button.is-install-ready{border-color:#00ffaa;background:rgba(0,255,170,.2);box-shadow:0 0 16px rgba(0,255,170,.17)}
+.install-app-button:active{transform:scale(.97)}
+.install-app-button:disabled{cursor:default;opacity:.78}
+.install-app-button.is-installed{color:#9deac6;border-color:#247b58;background:rgba(22,163,74,.12)}
+@media(max-width:620px){.topbar{gap:5px}.topright{gap:5px}.install-app-button{min-height:30px;padding:5px 7px;gap:4px;font-size:9px;border-radius:9px}.install-app-button .ui-icon{width:15px;height:15px}.topright .secure{display:none}}
+@media(max-width:380px){.install-app-button span{font-size:0}.install-app-button span::after{content:"تثبيت";font-size:9px}}
