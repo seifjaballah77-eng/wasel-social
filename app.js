@@ -25,7 +25,7 @@ async function api(path,options={}){
  const raw=await response.text();return raw?JSON.parse(raw):[];
 }
 
-let activeCallApi=null,callScriptPromise=null,activeCallInfo=null,callClockTimer=null,incomingRingTimer=null,incomingToneTimer=null,handledCallOffers=new Set(),incomingCallOffer=null,ringAudioContext=null;
+let activeCallApi=null,callScriptPromise=null,activeCallInfo=null,callClockTimer=null,callSignalTimer=null,incomingRingTimer=null,incomingToneTimer=null,handledCallOffers=new Set(),incomingCallOffer=null,ringAudioContext=null;
 const CALL_LOG_PREFIX="[[SEIF_CALL_LOG]]";
 const CALL_OFFER_PREFIX="[[SEIF_CALL_OFFER]]";
 function startRingtone(){
@@ -116,6 +116,24 @@ async function startCall(kind,isIncoming=false,sharedRoomName=null){
  $("callModalNote").textContent=isIncoming?"تم قبول المكالمة، جارٍ الانضمام…":"جارٍ الرنين لدى الطرف الآخر. انتظر قبول المكالمة…";
  const mount=$("jitsiMount");mount.replaceChildren();status(isIncoming?"جارٍ الانضمام إلى المكالمة…":"تم إرسال طلب المكالمة؛ جارٍ الاتصال…");
  activeCallInfo={peerId,peerName:person.display_name||"صديقك",kind,roomName,offerMessageId,startedAt:Date.now(),joinedAt:0,peerJoined:false,saved:false};
+ clearInterval(callSignalTimer);callSignalTimer=null;
+ if(offerMessageId){
+  callSignalTimer=setInterval(async()=>{
+   const info=activeCallInfo;if(!info||info.offerMessageId!==offerMessageId)return;
+   try{
+    const rows=await api("wasel_chat_messages?select=body&id=eq."+encodeURIComponent(offerMessageId));
+    const bits=(rows[0]?.body||"").split("|");
+    if(bits[2]==="declined"||bits[2]==="missed"){
+     status(bits[2]==="declined"?"رفض الطرف الآخر المكالمة.":"لم يتم الرد على المكالمة.",true);
+     await endCall();return;
+    }
+    if(!info.peerJoined&&Date.now()-info.startedAt>45000){
+     status("انتهت مهلة انتظار رد الطرف الآخر.",true);
+     await endCall();
+    }
+   }catch(e){console.warn("Call signaling check failed",e);}
+  },2500);
+ }
  try{
   await loadJitsiScript();
   if(overlay.hidden||!activeCallInfo)return;
@@ -128,7 +146,7 @@ async function startCall(kind,isIncoming=false,sharedRoomName=null){
  }catch(e){status("تعذر بدء المكالمة: "+e.message,true);await endCall();}
 }
 async function endCall(){
- const info=activeCallInfo;activeCallInfo=null;clearInterval(callClockTimer);callClockTimer=null;
+ const info=activeCallInfo;activeCallInfo=null;clearInterval(callClockTimer);callClockTimer=null;clearInterval(callSignalTimer);callSignalTimer=null;
  const apiInstance=activeCallApi;activeCallApi=null;
  if(apiInstance){try{apiInstance.executeCommand("hangup");}catch(e){}try{apiInstance.dispose();}catch(e){}}
  const overlay=$("callModal");if(overlay){overlay.hidden=true;overlay.classList.remove("is-minimized");}const mount=$("jitsiMount");if(mount)mount.replaceChildren();
