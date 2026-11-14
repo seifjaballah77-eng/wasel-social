@@ -29,6 +29,10 @@ class MainActivity : ComponentActivity() {
         if (result.resultCode == RESULT_OK && hasNearbyPermissions()) startNearby()
         else status.text = "يجب تشغيل Bluetooth للسماح بالبحث عن الأجهزة القريبة."
     }
+    private val permissionsLauncher = registerForActivityResult(androidx.activity.result.contract.ActivityResultContracts.RequestMultiplePermissions()) { results ->
+        if (results.values.all { it } && hasNearbyPermissions()) startNearby()
+        else status.text = "اسمح بصلاحيات الأجهزة القريبة والميكروفون للمكالمات."
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -136,11 +140,6 @@ class MainActivity : ComponentActivity() {
     private fun hasNearbyPermissions() = requiredPermissions().all {
         ContextCompat.checkSelfPermission(this, it) == PackageManager.PERMISSION_GRANTED
     }
-    private fun requestNearbyPermissions() = ActivityCompat.requestPermissions(this, requiredPermissions(), 410)
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, results: IntArray) {
-        super.onRequestPermissionsResult(requestCode, permissions, results)
-        if (requestCode == 410 && hasNearbyPermissions()) startNearby()
-        else if (requestCode == 410) status.text = "اسمح بصلاحيات الأجهزة القريبة والميكروفون للمكالمات."
-    }
+    private fun requestNearbyPermissions() = permissionsLauncher.launch(requiredPermissions())
     override fun onDestroy() { nearby.stop(); super.onDestroy() }
 }
