@@ -2,6 +2,7 @@ package app.seifmessages
 
 import android.Manifest
 import android.content.Intent
+import android.bluetooth.BluetoothAdapter
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
@@ -24,6 +25,10 @@ class MainActivity : ComponentActivity() {
     private lateinit var hangupButton: Button
     private lateinit var nearby: OfflineNearbyManager
     private var nearbyRunning = false
+    private val enableBluetoothLauncher = registerForActivityResult(androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == RESULT_OK && hasNearbyPermissions()) startNearby()
+        else status.text = "يجب تشغيل Bluetooth للسماح بالبحث عن الأجهزة القريبة."
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -101,10 +106,20 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun startNearby() {
+        val adapter = BluetoothAdapter.getDefaultAdapter()
+        if (adapter != null && !adapter.isEnabled) {
+            status.text = "يرجى تشغيل Bluetooth. سيطلب Android الإذن الآن."
+            try {
+                enableBluetoothLauncher.launch(Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE))
+            } catch (e: Exception) {
+                status.text = "افتح إعدادات Bluetooth وشغّله ثم أعد المحاولة."
+            }
+            return
+        }
         nearbyRunning = true
         bluetoothButton.text = "إيقاف الاتصال القريب"
-        nearby.start()
         callButton.isEnabled = false
+        nearby.start()
     }
 
     private fun requiredPermissions(): Array<String> {
