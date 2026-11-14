@@ -896,3 +896,22 @@ body.mobile-chat-open .topbar .profile-open {
 .install-app-button.is-installed{color:#9deac6;border-color:#247b58;background:rgba(22,163,74,.12)}
 @media(max-width:620px){.topbar{gap:5px}.topright{gap:5px}.install-app-button{min-height:30px;padding:5px 7px;gap:4px;font-size:9px;border-radius:9px}.install-app-button .ui-icon{width:15px;height:15px}.topright .secure{display:none}}
 @media(max-width:380px){.install-app-button span{font-size:0}.install-app-button span::after{content:"تثبيت";font-size:9px}}
+
+
+/* Integrated all-platform downloads dialog */
+.downloads-overlay{position:fixed;inset:0;z-index:3000;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(0,4,12,.82);backdrop-filter:blur(12px)}
+.downloads-overlay[hidden]{display:none!important}
+.downloads-panel{position:relative;width:min(760px,100%);max-height:min(88vh,820px);overflow:auto;padding:26px;border:1px solid #294563;border-radius:22px;background:linear-gradient(145deg,#101c2e,#070d18);box-shadow:0 24px 80px #000b,0 0 28px #00ffaa12;color:#eaf2ff}
+.downloads-close{position:absolute;top:13px;inset-inline-end:14px;width:36px;height:36px;border:1px solid #344963;border-radius:11px;background:#111f32;color:#eaf2ff;font-size:25px;cursor:pointer}
+.downloads-panel .eyebrow{color:#67eac4;font-size:11px;font-weight:800;letter-spacing:2px}
+.downloads-panel h2{margin:7px 0;font-size:27px;color:#f1f7ff}
+.downloads-intro{margin:0 0 18px;color:#a7bad2;font-size:13px}
+.downloads-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.download-card{padding:15px;border:1px solid #263c57;border-radius:15px;background:linear-gradient(145deg,#122137,#0b1422)}
+.download-card h3{margin:0 0 6px;color:#eaf7ff;font-size:16px}
+.download-card p{min-height:42px;margin:0 0 10px;color:#9fb2ca;font-size:12px;line-height:1.7}
+.download-action{display:flex;width:100%;min-height:39px;align-items:center;justify-content:center;padding:9px 12px;border:0;border-radius:10px;background:#00d9a0;color:#03251d!important;text-decoration:none!important;font:inherit;font-size:12px;font-weight:900;cursor:pointer}
+.download-action.secondary{border:1px solid #31516f;background:#132943;color:#e4f5ff!important}
+.download-sub{display:block;margin-top:8px;color:#82dccc!important;font-size:11px;text-align:center}
+.downloads-footnote{margin:15px 0 0;padding:12px;border:1px solid #35415a;border-radius:12px;color:#aebfd4;font-size:11px;line-height:1.8}
+@media(max-width:520px){.downloads-panel{padding:21px 14px;border-radius:17px}.downloads-panel h2{font-size:23px}.downloads-grid{grid-template-columns:1fr;gap:9px}.download-card{padding:13px}.download-card p{min-height:0}.downloads-overlay{padding:9px}}
