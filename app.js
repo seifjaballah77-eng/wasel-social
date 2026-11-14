@@ -616,63 +616,43 @@ start();
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&selectedId)loadMessages().catch(()=>{});});
 
 
-// Install Seif Messages as an app (PWA) — no store/account required.
-(function setupSeifInstall(){
-  if(window.SEIF_INSTALL_PROMPT_V1)return;
-  window.SEIF_INSTALL_PROMPT_V1=true;
-  const button=document.getElementById("installAppButton");
-  if(!button)return;
+// Unified downloads panel and PWA installation.
+(function setupDownloadsPanel(){
+  const openButton=document.getElementById("installAppButton");
+  const panel=document.getElementById("downloadsModal");
+  const closeButton=document.getElementById("downloadsClose");
+  const pwaButton=document.getElementById("pwaInstallButton");
+  if(!openButton||!panel)return;
   let installPrompt=null;
-  const isStandalone=()=>window.matchMedia("(display-mode: standalone)").matches||window.navigator.standalone===true;
-  const setInstalled=()=>{
-    button.disabled=true;
-    button.innerHTML='<svg class="ui-icon" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 4 4L19 6"/></svg><span>التطبيق مثبت</span>';
-    button.title="تم تثبيت Seif Messages على جهازك";
-    button.classList.add("is-installed");
-  };
-  if(isStandalone())setInstalled();
+  const close=()=>{panel.hidden=true;document.body.classList.remove("downloads-open");};
+  const open=()=>{panel.hidden=false;document.body.classList.add("downloads-open");};
+  openButton.addEventListener("click",open);
+  closeButton?.addEventListener("click",close);
+  panel.addEventListener("click",event=>{if(event.target===panel)close();});
+  document.addEventListener("keydown",event=>{if(event.key==="Escape"&&!panel.hidden)close();});
   window.addEventListener("beforeinstallprompt",event=>{
-    event.preventDefault();
-    installPrompt=event;
-    button.classList.add("is-install-ready");
-    button.title="تثبيت Seif Messages على جهازك";
+    event.preventDefault();installPrompt=event;
+    if(pwaButton){pwaButton.textContent="تثبيت التطبيق الآن";pwaButton.classList.add("is-install-ready");}
   });
-  window.addEventListener("appinstalled",()=>{
-    installPrompt=null;
-    setInstalled();
-    const status=document.getElementById("callStatus");
-    if(status){status.textContent="تم تثبيت Seif Messages بنجاح.";status.className="statusline";}
-  });
-  button.addEventListener("click",async()=>{
-    if(isStandalone()){setInstalled();return;}
+  window.addEventListener("appinstalled",()=>{installPrompt=null;if(pwaButton){pwaButton.textContent="تم تثبيت التطبيق";pwaButton.disabled=true;}});
+  pwaButton?.addEventListener("click",async()=>{
     if(installPrompt){
-      button.disabled=true;
-      try{
-        await installPrompt.prompt();
-        const choice=await installPrompt.userChoice;
-        if(choice&&choice.outcome==="accepted")setInstalled();
-        else button.disabled=false;
-      }catch(error){
-        button.disabled=false;
-        showInstallHelp();
-      }finally{installPrompt=null;}
-      return;
-    }
-    showInstallHelp();
+      try{await installPrompt.prompt();const choice=await installPrompt.userChoice;if(choice?.outcome==="accepted"){pwaButton.textContent="تم تثبيت التطبيق";pwaButton.disabled=true;} }
+      catch(_){showInstallHelp("auto");}
+      finally{installPrompt=null;}
+    }else showInstallHelp("auto");
   });
-  function showInstallHelp(){
-    const isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent);
-    const isAndroid=/android/i.test(navigator.userAgent);
-    let message;
-    if(isIOS){
-      message="لتثبيت التطبيق على iPhone أو iPad:\n1. افتح الصفحة في Safari.\n2. اضغط زر المشاركة.\n3. اختر «إضافة إلى الشاشة الرئيسية».";
-    }else if(isAndroid){
-      message="لتثبيت التطبيق على Android:\n1. افتح الموقع في Chrome.\n2. افتح قائمة ⋮.\n3. اختر «تثبيت التطبيق» أو «إضافة إلى الشاشة الرئيسية».";
+  panel.querySelectorAll("[data-install-help]").forEach(button=>{
+    button.addEventListener("click",()=>showInstallHelp(button.dataset.installHelp));
+  });
+  function showInstallHelp(kind){
+    const ua=navigator.userAgent;
+    if(kind==="ios"||(/iphone|ipad|ipod/i.test(ua)&&kind==="auto")){
+      window.alert("على iPhone وiPad: افتح الموقع في Safari، اضغط مشاركة، ثم اختر «إضافة إلى الشاشة الرئيسية».");
+    }else if(kind==="mac"||(/macintosh/i.test(ua)&&kind==="auto")){
+      window.alert("على macOS: افتح الموقع في Safari واختر File ثم Add to Dock، أو استخدم خيار التثبيت من قائمة Chrome.");
     }else{
-      message="لتثبيت التطبيق على الكمبيوتر:\nافتح الموقع في Chrome أو Edge، ثم اختر أيقونة التثبيت في شريط العنوان أو من القائمة «تثبيت Seif Messages».";
+      window.alert("على الكمبيوتر: افتح الموقع في Chrome أو Edge، ثم اضغط أيقونة التثبيت في شريط العنوان أو اختر «تثبيت Seif Messages» من قائمة المتصفح.");
     }
-    const status=document.getElementById("callStatus");
-    if(status){status.textContent=message.replace(/\n/g,"  ");status.className="statusline";}
-    window.alert(message);
   }
 })();
