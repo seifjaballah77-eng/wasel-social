@@ -36,7 +36,7 @@ class MainActivity : ComponentActivity() {
                 acceptButton.visibility = View.VISIBLE
                 declineButton.visibility = View.VISIBLE
             } },
-            { message -> runOnUiThread { callStatus.text = "حالة المكالمة: " + message } }
+            { message -> runOnUiThread { callStatus.text = "حالة المكالمة: " + message; callButton.isEnabled = message.contains("جاهز") || message.contains("نشطة"); if (message.contains("نشطة")) hangupButton.isEnabled = true; if (message.contains("انتهت") || message.contains("رفض") || message.contains("لا يوجد")) hangupButton.isEnabled = false } }
         )
         val title = TextView(this).apply { text = "Seif Messages"; textSize = 26f; setPadding(8, 28, 8, 12) }
         val onlineButton = Button(this).apply {
@@ -104,7 +104,7 @@ class MainActivity : ComponentActivity() {
         nearbyRunning = true
         bluetoothButton.text = "إيقاف الاتصال القريب"
         nearby.start()
-        callButton.isEnabled = true
+        callButton.isEnabled = false
     }
 
     private fun requiredPermissions(): Array<String> {
