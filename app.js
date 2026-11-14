@@ -47,7 +47,7 @@ function ensureIncomingCallModal(){
 }
 function showIncomingCall(m,kind){
  if(activeCallInfo||incomingCallOffer||handledCallOffers.has(String(m.id)))return;
- incomingCallOffer={id:m.id,callerId:m.sender_id,callerName:m.sender_name||"صديقك",kind,createdAt:m.created_at};
+ const offerBits=(m.body||"").split("|");incomingCallOffer={id:m.id,callerId:m.sender_id,callerName:m.sender_name||"صديقك",kind,roomName:offerBits[4]||null,createdAt:m.created_at};
  const overlay=ensureIncomingCallModal();$("incomingCallTitle").textContent=kind==="video"?"مكالمة فيديو واردة":"مكالمة صوتية واردة";$("incomingCallNote").textContent=(m.sender_name||"صديقك")+" يتصل بك…";
  overlay.hidden=false;startRingtone();status("مكالمة واردة من "+(m.sender_name||"صديقك"));
 }
@@ -58,7 +58,7 @@ async function answerIncomingCall(accept){
   const result=accept?"accepted":"declined";
   await api("wasel_chat_messages?id=eq."+encodeURIComponent(offer.id)+"&recipient_id=eq."+encodeURIComponent(myId),{method:"PATCH",headers:{"Prefer":"return=minimal"},body:JSON.stringify({body:[CALL_OFFER_PREFIX,offer.kind,result,String(Date.now())].join("|")})});
  }catch(e){console.warn("Could not update call request",e);}
- if(accept){await selectPerson(offer.callerId);await startCall(offer.kind,true);}
+ if(accept){await selectPerson(offer.callerId);await startCall(offer.kind,true,offer.roomName);}
  else{status("تم رفض المكالمة.");}
 }
 function formatCallDuration(seconds){const n=Math.max(0,Number(seconds)||0);return String(Math.floor(n/60)).padStart(2,"0")+":"+String(n%60).padStart(2,"0");}
@@ -97,26 +97,28 @@ function loadJitsiScript(){
  callScriptPromise=new Promise((resolve,reject)=>{const script=document.createElement("script");script.src="https://meet.jit.si/external_api.js";script.async=true;script.onload=()=>window.JitsiMeetExternalAPI?resolve():reject(new Error("تعذر تحميل مكتبة الاتصال."));script.onerror=()=>reject(new Error("تعذر الوصول إلى خدمة الاتصال. تحقق من الإنترنت."));document.head.appendChild(script);});
  return callScriptPromise;
 }
-async function startCall(kind,isIncoming=false){
+async function startCall(kind,isIncoming=false,sharedRoomName=null){
  if(selectedId&&!canContact(selectedId)){contactRestrictionNotice();return;}
  if(!selectedId||selectedId===myId){status("اختر صديقًا من قائمة الأشخاص أولًا.",true);return;}
  const person=people.find(p=>p.user_id===selectedId);if(!person){status("لم يتم العثور على جهة الاتصال. حدّث قائمة الأشخاص أولًا.",true);return;}
  if(activeCallApi||activeCallInfo){status("هناك مكالمة جارية بالفعل.",true);return;}
  const peerId=selectedId;
+ const roomName=sharedRoomName||("seifmessages-"+[myId,peerId].sort().join("-")+"-"+crypto.randomUUID());
+ let offerMessageId=null;
  if(!isIncoming){
   try{
-   await api("wasel_chat_messages",{method:"POST",headers:{"Prefer":"return=minimal"},body:JSON.stringify({room_id:ROOM,sender_id:myId,sender_name:currentName()||"مستخدم",recipient_id:peerId,body:[CALL_OFFER_PREFIX,kind,"ringing",String(Date.now())].join("|"),image_data:null})});
-  }catch(e){status("تعذر إرسال طلب المكالمة. تحقق من اتصال Supabase وصلاحيات الرسائل.",true);return;}
+   const inserted=await api("wasel_chat_messages",{method:"POST",headers:{"Prefer":"return=representation"},body:JSON.stringify({room_id:ROOM,sender_id:myId,sender_name:currentName()||"مستخدم",recipient_id:peerId,body:[CALL_OFFER_PREFIX,kind,"ringing",String(Date.now()),roomName].join("|"),image_data:null})});
+   offerMessageId=inserted?.[0]?.id||null;
+  }catch(e){status("تعذر إرسال طلب المكالمة: "+e.message,true);return;}
  }
  const overlay=ensureCallModal();overlay.hidden=false;overlay.classList.remove("is-minimized");
  $("callModalTitle").textContent=(kind==="video"?"مكالمة فيديو مع ":"مكالمة صوتية مع ")+(person.display_name||"صديقك");
  $("callModalNote").textContent=isIncoming?"تم قبول المكالمة، جارٍ الانضمام…":"جارٍ الرنين لدى الطرف الآخر. انتظر قبول المكالمة…";
  const mount=$("jitsiMount");mount.replaceChildren();status(isIncoming?"جارٍ الانضمام إلى المكالمة…":"تم إرسال طلب المكالمة؛ جارٍ الاتصال…");
- activeCallInfo={peerId,peerName:person.display_name||"صديقك",kind,startedAt:Date.now(),joinedAt:0,peerJoined:false,saved:false};
+ activeCallInfo={peerId,peerName:person.display_name||"صديقك",kind,roomName,offerMessageId,startedAt:Date.now(),joinedAt:0,peerJoined:false,saved:false};
  try{
   await loadJitsiScript();
   if(overlay.hidden||!activeCallInfo)return;
-  const roomName="seifmessages-"+[myId,peerId].sort().join("-");
   activeCallApi=new window.JitsiMeetExternalAPI("meet.jit.si",{roomName,width:"100%",height:"100%",parentNode:mount,lang:"ar",userInfo:{displayName:currentName()||"مستخدم"},configOverwrite:{startWithAudioMuted:false,startWithVideoMuted:kind==="audio",prejoinConfig:{enabled:false},disableDeepLinking:true},interfaceConfigOverwrite:{TOOLBAR_BUTTONS:kind==="audio"?["microphone","hangup","chat","settings","tileview"]:["microphone","camera","desktop","hangup","chat","settings","tileview"]}});
   activeCallApi.addListener("videoConferenceJoined",()=>{if(activeCallInfo)activeCallInfo.joinedAt=Date.now();status("أنت داخل المكالمة.");$("callModalNote").textContent="مدة المكالمة "+formatCallDuration(0);clearInterval(callClockTimer);callClockTimer=setInterval(()=>{if(activeCallInfo&&activeCallInfo.joinedAt)$("callModalNote").textContent="مدة المكالمة "+formatCallDuration(Math.floor((Date.now()-activeCallInfo.joinedAt)/1000));},1000);});
   activeCallApi.addListener("participantJoined",()=>{if(activeCallInfo)activeCallInfo.peerJoined=true;$("callModalNote").textContent="انضم صديقك إلى المكالمة.";status("انضم الطرف الآخر إلى المكالمة.");});
