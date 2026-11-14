@@ -78,10 +78,18 @@ function ensureCallModal(){
  const card=document.createElement("section");card.className="call-card";
  const head=document.createElement("div");head.className="call-card-head";
  const title=document.createElement("strong");title.id="callModalTitle";title.textContent="مكالمة Seif Messages";
+ const mini=document.createElement("button");mini.type="button";mini.className="call-mini-toggle";mini.textContent="تصغير";mini.setAttribute("aria-label","تصغير نافذة المكالمة");mini.addEventListener("click",()=>toggleMiniCall());
  const close=document.createElement("button");close.type="button";close.className="call-close";close.textContent="إنهاء المكالمة";close.addEventListener("click",endCall);
- head.append(title,close);const note=document.createElement("p");note.id="callModalNote";note.className="call-note";
+ head.append(title,mini,close);const note=document.createElement("p");note.id="callModalNote";note.className="call-note";
  const mount=document.createElement("div");mount.id="jitsiMount";mount.className="jitsi-mount";
  card.append(head,note,mount);overlay.appendChild(card);overlay.addEventListener("click",e=>{if(e.target===overlay)endCall();});document.body.appendChild(overlay);return overlay;
+}
+function toggleMiniCall(force){
+ const overlay=$("callModal");if(!overlay||!activeCallInfo)return;
+ const minimized=typeof force==="boolean"?force:!overlay.classList.contains("is-minimized");
+ overlay.classList.toggle("is-minimized",minimized);
+ const button=overlay.querySelector(".call-mini-toggle");
+ if(button){button.textContent=minimized?"تكبير":"تصغير";button.setAttribute("aria-label",minimized?"تكبير نافذة المكالمة":"تصغير نافذة المكالمة");}
 }
 function loadJitsiScript(){
  if(window.JitsiMeetExternalAPI)return Promise.resolve();
@@ -100,7 +108,7 @@ async function startCall(kind,isIncoming=false){
    await api("wasel_chat_messages",{method:"POST",headers:{"Prefer":"return=minimal"},body:JSON.stringify({room_id:ROOM,sender_id:myId,sender_name:currentName()||"مستخدم",recipient_id:peerId,body:[CALL_OFFER_PREFIX,kind,"ringing",String(Date.now())].join("|"),image_data:null})});
   }catch(e){status("تعذر إرسال طلب المكالمة. تحقق من اتصال Supabase وصلاحيات الرسائل.",true);return;}
  }
- const overlay=ensureCallModal();overlay.hidden=false;
+ const overlay=ensureCallModal();overlay.hidden=false;overlay.classList.remove("is-minimized");
  $("callModalTitle").textContent=(kind==="video"?"مكالمة فيديو مع ":"مكالمة صوتية مع ")+(person.display_name||"صديقك");
  $("callModalNote").textContent=isIncoming?"تم قبول المكالمة، جارٍ الانضمام…":"جارٍ الرنين لدى الطرف الآخر. انتظر قبول المكالمة…";
  const mount=$("jitsiMount");mount.replaceChildren();status(isIncoming?"جارٍ الانضمام إلى المكالمة…":"تم إرسال طلب المكالمة؛ جارٍ الاتصال…");
@@ -121,7 +129,7 @@ async function endCall(){
  const info=activeCallInfo;activeCallInfo=null;clearInterval(callClockTimer);callClockTimer=null;
  const apiInstance=activeCallApi;activeCallApi=null;
  if(apiInstance){try{apiInstance.executeCommand("hangup");}catch(e){}try{apiInstance.dispose();}catch(e){}}
- const overlay=$("callModal");if(overlay)overlay.hidden=true;const mount=$("jitsiMount");if(mount)mount.replaceChildren();
+ const overlay=$("callModal");if(overlay){overlay.hidden=true;overlay.classList.remove("is-minimized");}const mount=$("jitsiMount");if(mount)mount.replaceChildren();
  if(info)await saveCallLog(info);
  status("انتهت المكالمة.");
 }
@@ -288,7 +296,7 @@ function renderMessages(){
   if(!m.deleted_at&&m.body&&isGiantEmoji(m.body))bubble.classList.add("giant-emoji");
   if(m.reply_to){const original=byId.get(String(m.reply_to));const q=document.createElement("div");q.className="quoted-message";q.textContent="↪ "+(original?(original.deleted_at?"تم حذف الرسالة":original.body||"صورة"):"رسالة سابقة");bubble.appendChild(q);}
   if(m.deleted_at){const gone=document.createElement("div");gone.className="deleted-text";gone.textContent="تم حذف هذه الرسالة";bubble.appendChild(gone);}
-  else {if(m.audio_data){const audio=document.createElement("audio");audio.controls=true;audio.preload="metadata";audio.src=m.audio_data;audio.className="voice-message-player";audio.setAttribute("aria-label","رسالة صوتية");bubble.appendChild(audio);}if(m.image_data){if(m.view_once&&m.viewed_at&&m.sender_id!==myId){const used=document.createElement("div");used.className="view-once-used";used.textContent="✓ تم فتح الصورة لمرة واحدة";bubble.appendChild(used);}else{const img=document.createElement("img");img.alt=m.view_once?"صورة للعرض مرة واحدة — اضغط للفتح":"صورة مرسلة — اضغط للتكبير";img.loading="lazy";img.src=m.image_data;img.style.maxWidth="100%";img.style.borderRadius="12px";img.tabIndex=0;img.role="button";img.addEventListener("click",()=>m.view_once&&m.sender_id!==myId?openViewOnceImage(m):openImageViewer(m.image_data));img.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();m.view_once&&m.sender_id!==myId?openViewOnceImage(m):openImageViewer(m.image_data);}});bubble.appendChild(img);}}if(m.body){const body=document.createElement("div");body.className="formatted-message";appendFormattedText(body,m.body);parseEmoji(body);bubble.appendChild(body);}}
+  else {if(m.audio_data){const audio=document.createElement("audio");audio.controls=true;audio.preload="metadata";audio.src=m.audio_data;audio.className="voice-message-player";audio.setAttribute("aria-label","رسالة صوتية");bubble.appendChild(audio);const speed=document.createElement("button");speed.type="button";speed.className="voice-speed-button";speed.textContent="1×";speed.title="تغيير سرعة تشغيل الرسالة الصوتية";speed.addEventListener("click",()=>{const rates=[1,1.25,1.5,2];const next=rates[(rates.indexOf(audio.playbackRate)+1)%rates.length];audio.playbackRate=next;speed.textContent=String(next).replace(/\.0$/,"")+"×";});bubble.appendChild(speed);}if(m.image_data){if(m.view_once&&m.viewed_at&&m.sender_id!==myId){const used=document.createElement("div");used.className="view-once-used";used.textContent="✓ تم فتح الصورة لمرة واحدة";bubble.appendChild(used);}else{const img=document.createElement("img");img.alt=m.view_once?"صورة للعرض مرة واحدة — اضغط للفتح":"صورة مرسلة — اضغط للتكبير";img.loading="lazy";img.src=m.image_data;img.style.maxWidth="100%";img.style.borderRadius="12px";img.tabIndex=0;img.role="button";img.addEventListener("click",()=>m.view_once&&m.sender_id!==myId?openViewOnceImage(m):openImageViewer(m.image_data));img.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();m.view_once&&m.sender_id!==myId?openViewOnceImage(m):openImageViewer(m.image_data);}});bubble.appendChild(img);}}if(m.body){const body=document.createElement("div");body.className="formatted-message";appendFormattedText(body,m.body);parseEmoji(body);bubble.appendChild(body);}}
   const reacts=document.createElement("div");reacts.className="reaction-row";const reactions=m.reactions&&typeof m.reactions==="object"?m.reactions:{};Object.entries(reactions).forEach(([emoji,ids])=>{const count=Array.isArray(ids)?ids.length:Number(ids)||0;if(count){const r=document.createElement("button");r.type="button";r.className="reaction-chip";r.textContent=emoji+" "+count;r.addEventListener("click",()=>toggleReaction(m,emoji));parseEmoji(r);reacts.appendChild(r);}});bubble.appendChild(reacts);
   const actions=document.createElement("div");actions.className="message-actions";actions.hidden=true;const toggle=document.createElement("button");toggle.type="button";toggle.className="message-actions-toggle";toggle.innerHTML=uiIcon("chevron")+" خيارات";toggle.setAttribute("aria-expanded","false");toggle.addEventListener("click",()=>{actions.hidden=!actions.hidden;toggle.setAttribute("aria-expanded",String(!actions.hidden));});bubble.appendChild(toggle);const pins=JSON.parse(localStorage.getItem(PIN_KEY)||"{}");const pinKey=String(selectedId||"") + ":" + String(m.id);const pin=document.createElement("button");pin.type="button";pin.innerHTML=uiIcon("pin")+" "+(pins[pinKey]?"مثبتة":"تثبيت");pin.addEventListener("click",()=>{const current=JSON.parse(localStorage.getItem(PIN_KEY)||"{}");if(current[pinKey])delete current[pinKey];else current[pinKey]=true;localStorage.setItem(PIN_KEY,JSON.stringify(current));renderMessages();});actions.appendChild(pin);const reply=document.createElement("button");reply.type="button";reply.innerHTML=uiIcon("reply")+" رد";reply.addEventListener("click",()=>setReply(m));actions.appendChild(reply);
   for(const emoji of ["👍","❤️","😂","😮","😢","🙏"]){const react=document.createElement("button");react.type="button";react.textContent=emoji;react.setAttribute("aria-label","تفاعل "+emoji);parseEmoji(react);react.addEventListener("click",()=>toggleReaction(m,emoji));actions.appendChild(react);}const moreReact=document.createElement("button");moreReact.type="button";moreReact.innerHTML=uiIcon("star");moreReact.title="رمز آخر";moreReact.addEventListener("click",()=>{const choice=prompt("اكتب رمز الإيموجي الذي تريد التفاعل به:","✨");if(choice&&choice.trim())toggleReaction(m,choice.trim());});actions.appendChild(moreReact);
