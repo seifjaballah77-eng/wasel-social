@@ -813,7 +813,7 @@ function showSuspensionScreen(record) {
  const eyebrow=document.createElement("span");eyebrow.className="suspension-eyebrow";eyebrow.textContent="SEIF MESSAGES · ACCOUNT REVIEW";card.appendChild(eyebrow);
  const title=document.createElement("h1");title.textContent="تم تعليق حسابك";card.appendChild(title);
  const intro=document.createElement("p");intro.textContent="تم إيقاف الوصول إلى حسابك مؤقتًا. إذا كنت ترى أن هذا القرار صدر بالخطأ، يمكنك شرح المشكلة وإرسال اعتراض للمراجعة.";card.appendChild(intro);
- const reason=document.createElement("div");reason.className="suspension-reason";reason.textContent="سبب التعليق: "+(record.suspension_reason||"مراجعة إدارية");card.appendChild(reason);
+ const reason=document.createElement("div");reason.className="suspension-reason";reason.textContent="سبب التعليق: "+(record.suspension_reason||"مراجعة إدارية");card.appendChild(reason);if(record.suspension_type==="temporary"&&record.suspension_until){const until=document.createElement("p");until.className="suspension-foot";until.textContent="ينتهي الحظر المؤقت في: "+new Date(record.suspension_until).toLocaleString("ar-TN");card.appendChild(until);}
  if(record.appeal_text||record.appeal_submitted){
   const sent=document.createElement("div");sent.className="appeal-sent";
   const strong=document.createElement("strong");strong.textContent="تم استلام اعتراضك";sent.appendChild(strong);
