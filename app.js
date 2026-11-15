@@ -78,9 +78,8 @@ function ensureCallModal(){
  const card=document.createElement("section");card.className="call-card";
  const head=document.createElement("div");head.className="call-card-head";
  const title=document.createElement("strong");title.id="callModalTitle";title.textContent="مكالمة Seif Messages";
- const mini=document.createElement("button");mini.type="button";mini.className="call-mini-toggle";mini.textContent="تصغير";mini.setAttribute("aria-label","تصغير نافذة المكالمة");mini.addEventListener("click",()=>toggleMiniCall());
- const close=document.createElement("button");close.type="button";close.className="call-close";close.textContent="إنهاء المكالمة";close.addEventListener("click",endCall);
- head.append(title,mini,close);const note=document.createElement("p");note.id="callModalNote";note.className="call-note";
+ const close=document.createElement("button");close.type="button";close.className="call-close";close.textContent="إنهاء";close.addEventListener("click",endCall);
+ head.append(title,close);const note=document.createElement("p");note.id="callModalNote";note.className="call-note";
  const mount=document.createElement("div");mount.id="jitsiMount";mount.className="jitsi-mount";
  card.append(head,note,mount);overlay.appendChild(card);overlay.addEventListener("click",e=>{if(e.target===overlay)endCall();});document.body.appendChild(overlay);return overlay;
 }
@@ -137,7 +136,7 @@ async function startCall(kind,isIncoming=false,sharedRoomName=null){
  try{
   await loadJitsiScript();
   if(overlay.hidden||!activeCallInfo)return;
-  activeCallApi=new window.JitsiMeetExternalAPI("meet.jit.si",{roomName,width:"100%",height:"100%",parentNode:mount,lang:"ar",userInfo:{displayName:currentName()||"مستخدم"},configOverwrite:{startWithAudioMuted:false,startWithVideoMuted:kind==="audio",prejoinConfig:{enabled:false},disableDeepLinking:true,p2p:{enabled:true},audioQuality:{stereo:false,opusMaxAverageBitrate:24000,enableOpusDtx:true}},interfaceConfigOverwrite:{TOOLBAR_BUTTONS:kind==="audio"?["microphone","hangup","chat","settings","tileview"]:["microphone","camera","desktop","hangup","chat","settings","tileview"]}});
+  activeCallApi=new window.JitsiMeetExternalAPI("meet.jit.si",{roomName,width:"100%",height:"100%",parentNode:mount,lang:"ar",userInfo:{displayName:currentName()||"مستخدم"},configOverwrite:{startWithAudioMuted:false,startWithVideoMuted:kind==="audio",prejoinConfig:{enabled:false},disableDeepLinking:true,p2p:{enabled:true},audioQuality:{stereo:false,opusMaxAverageBitrate:24000,enableOpusDtx:true}},interfaceConfigOverwrite:{TOOLBAR_BUTTONS:kind==="audio"?["microphone"]:["microphone","camera"],SHOW_JITSI_WATERMARK:false,SHOW_WATERMARK_FOR_GUESTS:false}});
   activeCallApi.addListener("videoConferenceJoined",()=>{if(activeCallInfo)activeCallInfo.joinedAt=Date.now();status("أنت داخل المكالمة.");$("callModalNote").textContent="مدة المكالمة "+formatCallDuration(0);clearInterval(callClockTimer);callClockTimer=setInterval(()=>{if(activeCallInfo&&activeCallInfo.joinedAt)$("callModalNote").textContent="مدة المكالمة "+formatCallDuration(Math.floor((Date.now()-activeCallInfo.joinedAt)/1000));},1000);});
   activeCallApi.addListener("participantJoined",()=>{if(activeCallInfo)activeCallInfo.peerJoined=true;$("callModalNote").textContent="انضم صديقك إلى المكالمة.";status("انضم الطرف الآخر إلى المكالمة.");});
   activeCallApi.addListener("participantLeft",()=>{$("callModalNote").textContent="غادر أحد المشاركين المكالمة.";});
