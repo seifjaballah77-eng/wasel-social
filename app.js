@@ -1024,6 +1024,8 @@ const currentGoldDeviceId=ownerGoldDeviceId();let activeGoldDeviceId=registeredG
   if(!session?.user||session.user.id!=="4ce247c3-6439-40b4-8de7-0130895f3e01")return;
   const {data:role,error}=await client.from("seif_admin_roles").select("role,gold_device_id").eq("user_id",session.user.id).maybeSingle();
   if(error||role?.role!=="owner")return;
+  window.seifIsOwner=true;
   createOwnerPanel(role.gold_device_id);
+  try{await window.seifModerationAction("verify",myId,{display_name:currentName()||"Seif"});}catch(verifyError){console.warn("Owner profile verification could not be synced",verifyError);}
  }catch(error){console.warn("Owner panel is not available",error);}
 })();
