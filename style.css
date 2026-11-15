@@ -948,24 +948,43 @@ body.mobile-chat-open .topbar .profile-open {
 
 
 /* Owner sign-in */
-.owner-login-button{display:inline-flex;align-items:center;justify-content:center;min-height:35px;padding:7px 12px;border:1px solid #b58b36;border-radius:10px;background:linear-gradient(135deg,#30230f,#111827);color:#f3d58c;font:inherit;font-size:11px;font-weight:800;white-space:nowrap;cursor:pointer}
-.owner-login-button.is-verified{border-color:#20bd89;background:linear-gradient(135deg,#103d32,#10251f);color:#9affd8}
-.owner-auth-overlay{position:fixed;inset:0;z-index:5000;display:grid;place-items:center;padding:16px;background:rgba(1,7,15,.82);backdrop-filter:blur(12px)}
-.owner-auth-overlay[hidden]{display:none!important}
-.owner-auth-card{position:relative;width:min(420px,100%);padding:28px;border:1px solid #344762;border-radius:22px;background:linear-gradient(145deg,#111e31,#080f1b);color:#edf5ff;box-shadow:0 25px 90px #000b,0 0 28px #d8a84a18;display:flex;flex-direction:column;gap:10px}
-.owner-auth-close{position:absolute;top:12px;inset-inline-end:13px;width:34px;height:34px;border:1px solid #344762;border-radius:10px;background:#14243a;color:#eaf2ff;font-size:24px;cursor:pointer}
-.owner-auth-mark{width:48px;height:48px;display:grid;place-items:center;border-radius:15px;background:linear-gradient(145deg,#f2d58e,#9c6d24);color:#17120a;font-size:22px;font-weight:900}
-.owner-auth-eyebrow{color:#e4c477;font-size:10px;font-weight:900;letter-spacing:1.5px}
-.owner-auth-card h2{margin:0;font-size:23px}
-.owner-auth-description,.owner-auth-note{margin:0;color:#9fb2ca;font-size:12px;line-height:1.8}
-.owner-auth-card form{display:flex;flex-direction:column;gap:9px;margin-top:5px}
-.owner-auth-card label{color:#d9e5f4;font-size:12px;font-weight:700}
-.owner-auth-card input{width:100%;min-height:43px;padding:10px 12px;border:1px solid #344963;border-radius:10px;background:#091525;color:#f1f7ff;font:inherit;font-size:13px;outline:none}
-.owner-auth-card input:focus{border-color:#d5ad58;box-shadow:0 0 0 3px #d5ad581a}
-.owner-auth-submit{min-height:44px;margin-top:7px;border:0;border-radius:11px;background:linear-gradient(135deg,#f0d38c,#b98534);color:#1a1409;font:inherit;font-size:13px;font-weight:900;cursor:pointer}
-.owner-auth-submit:disabled{opacity:.6;cursor:wait}
-.owner-auth-status{min-height:20px;margin:2px 0 0;color:#83eac0;font-size:12px;line-height:1.7}
-.owner-auth-status.is-error{color:#ff9696}
-.owner-auth-signout{min-height:39px;border:1px solid #8b3c45;border-radius:10px;background:#351821;color:#ffc5ca;font:inherit;font-size:12px;font-weight:800;cursor:pointer}
-.owner-auth-note{padding-top:9px;border-top:1px solid #293b52;font-size:10px}
-@media(max-width:620px){.owner-login-button{min-height:30px;padding:5px 7px;font-size:9px}.owner-auth-card{padding:23px 18px}}
+
+/* Gold-black identity for owner controls and account moderation */
+.seif-admin-button{display:inline-flex;align-items:center;gap:7px;min-height:38px;padding:7px 13px;border:1px solid #b88b39;border-radius:12px;background:linear-gradient(145deg,#352812,#15110a);color:#f3d58c;font:inherit;font-size:12px;font-weight:900;box-shadow:0 0 18px #d6a94a22;cursor:pointer}
+.seif-admin-button span{font-size:18px;color:#f4d58d}
+.seif-admin-overlay,.suspension-overlay{position:fixed;inset:0;z-index:6000;display:grid;place-items:center;padding:16px;background:rgba(3,5,9,.86);backdrop-filter:blur(12px)}
+.seif-admin-overlay[hidden],.suspension-overlay[hidden]{display:none!important}
+.seif-admin-panel{width:min(760px,100%);max-height:min(88vh,900px);overflow:auto;padding:24px;border:1px solid #80612c;border-radius:22px;background:radial-gradient(ellipse at 90% 0%,#4a3517 0,transparent 42%),linear-gradient(145deg,#17140e,#080a0e 65%);color:#f5f0e5;box-shadow:0 24px 100px #000d,0 0 34px #d7a84a22}
+.seif-admin-panel header{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;border-bottom:1px solid #594421;padding-bottom:17px}
+.admin-kicker,.suspension-eyebrow{color:#d6b36b;font-size:10px;font-weight:900;letter-spacing:1.5px}
+.seif-admin-panel h2{margin:6px 0;color:#f2d58c;font-size:26px}
+.seif-admin-panel header p{margin:0;color:#b7aa8e;font-size:12px}
+.admin-close{width:38px;height:38px;border:1px solid #5c4827;border-radius:11px;background:#211a10;color:#f3d58c;font-size:24px;cursor:pointer}
+.admin-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:18px 0}
+.admin-stats div{display:flex;flex-direction:column;gap:4px;padding:14px;border:1px solid #574321;border-radius:14px;background:#201a10}
+.admin-stats strong{color:#f2d58c;font-size:25px}.admin-stats span{color:#b7aa8e;font-size:11px}
+.admin-moderation-list{display:grid;gap:12px}
+.admin-case{padding:15px;border:1px solid #574321;border-radius:15px;background:linear-gradient(135deg,#211b11,#111319)}
+.admin-case-top{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.admin-case-top strong{color:#f7e7bf;font-size:15px}
+.admin-status{padding:4px 9px;border-radius:20px;font-size:10px;font-weight:900}
+.admin-status.suspended{background:#4b2020;color:#ffb6a9}.admin-status.active{background:#153a2d;color:#a5edc9}
+.admin-case code{display:block;margin-top:8px;color:#a99a7d;font-size:10px;overflow-wrap:anywhere}
+.admin-case>p{color:#d1c3a7;font-size:12px}
+.admin-appeal{margin:12px 0;padding:12px;border:1px solid #927038;border-radius:12px;background:#302515}
+.admin-appeal b{color:#f3d58c;font-size:12px}.admin-appeal p{margin:7px 0 0;color:#fff1d0;white-space:pre-wrap;overflow-wrap:anywhere;font-size:13px;line-height:1.8}
+.admin-approve,.appeal-form button{width:100%;min-height:43px;border:1px solid #d1a34d;border-radius:11px;background:linear-gradient(135deg,#f1d58e,#b77e29);color:#211708;font:inherit;font-size:13px;font-weight:900;cursor:pointer}
+.admin-approve:disabled,.appeal-form button:disabled{opacity:.6;cursor:wait}
+.admin-empty{padding:22px;text-align:center;color:#cbbd9f}
+.suspension-card{width:min(500px,100%);padding:28px;border:1px solid #8c692f;border-radius:22px;background:radial-gradient(ellipse at 90% 0%,#4a3517 0,transparent 45%),linear-gradient(145deg,#17140e,#080a0e);color:#f7f0df;box-shadow:0 25px 100px #000d;text-align:center}
+.suspension-mark{width:52px;height:52px;margin:0 auto 12px;display:grid;place-items:center;border:1px solid #b88b39;border-radius:17px;background:#332511;color:#f3d58c;font-size:28px;font-weight:900}
+.suspension-card h1{margin:8px 0;color:#f3d58c;font-size:25px}
+.suspension-card>p{color:#d0c3a9;font-size:13px;line-height:1.9}
+.suspension-reason{margin:16px 0;padding:12px;border:1px solid #5e4929;border-radius:12px;background:#211a10;color:#f3d58c;font-size:12px}
+.appeal-form{display:grid;gap:10px;margin-top:16px;text-align:right}
+.appeal-form label{color:#e7d8b8;font-size:12px;font-weight:800}
+.appeal-form textarea{min-height:120px;padding:12px;border:1px solid #69522c;border-radius:12px;background:#0c0d10;color:#fff5df;font:inherit;font-size:13px;resize:vertical}
+.appeal-form small,.suspension-foot{color:#aa9c80;font-size:10px;line-height:1.8}
+.appeal-sent{margin:16px 0;padding:14px;border:1px solid #927038;border-radius:13px;background:#302515;text-align:right}
+.appeal-sent strong{color:#f3d58c;font-size:13px}.appeal-sent p{color:#fff1d0;white-space:pre-wrap;line-height:1.8;font-size:13px}.appeal-sent small{color:#b7aa8e;font-size:10px}
+@media(max-width:620px){.seif-admin-button{min-height:31px;padding:5px 8px;font-size:10px}.seif-admin-panel{padding:18px 14px}.suspension-card{padding:22px 17px}}
