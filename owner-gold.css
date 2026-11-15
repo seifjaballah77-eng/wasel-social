@@ -39,3 +39,8 @@ body{background:radial-gradient(ellipse at 12% 8%,rgba(199,151,62,.12),transpare
 .namecard input{background:#0c0a07!important;border-color:#70572d77!important;color:#fff3d2!important}
 .namecard input:focus{border-color:#e6bd67!important;box-shadow:0 0 0 3px #e6bd6718,0 0 18px #e6bd6714!important}
 .namecard small{color:#a89a7e!important}.nameerror{color:#ff9b91!important}
+
+/* Floating quick menu inherits the owner's gold identity only on the registered device */
+.seif-floating-toggle{border-color:#d5b46d!important;background:linear-gradient(135deg,#f0d995,#c18b36 58%,#76501e)!important;color:#211706!important;box-shadow:0 10px 28px #0009,0 0 24px #e6bd6744!important}
+.seif-floating-action{border-color:#9d773b88!important;background:linear-gradient(145deg,#21190e,#100e09)!important;color:#f2d58c!important}
+.seif-floating-action:hover{border-color:#e6bd67!important;box-shadow:0 0 18px #e6bd6722!important}
