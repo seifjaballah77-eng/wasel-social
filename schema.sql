@@ -213,3 +213,27 @@ create policy "Wasel public people delete" on public.wasel_chat_people
 grant usage on schema public to anon;
 grant select, insert, update, delete on public.wasel_chat_people to anon;
 notify pgrst, 'reload schema';
+
+
+-- Seif Messages account moderation and appeals.
+-- This table is writable only by the wasel-moderation Edge Function using service_role.
+create table if not exists public.wasel_account_moderation (
+  user_id text primary key,
+  display_name text not null default 'مستخدم',
+  is_suspended boolean not null default true,
+  suspension_reason text not null default 'مخالفة شروط الاستخدام',
+  appeal_text text,
+  appeal_at timestamptz,
+  suspended_at timestamptz not null default now(),
+  resolved_at timestamptz,
+  admin_note text,
+  updated_at timestamptz not null default now(),
+  constraint wasel_moderation_user_id_length check (char_length(user_id) between 8 and 100),
+  constraint wasel_moderation_appeal_length check (appeal_text is null or char_length(appeal_text) <= 2000)
+);
+alter table public.wasel_account_moderation enable row level security;
+revoke all on public.wasel_account_moderation from anon, authenticated;
+grant all on public.wasel_account_moderation to service_role;
+comment on table public.wasel_account_moderation is
+  'Server-managed suspension records and user appeals for Seif Messages.';
+notify pgrst, 'reload schema';
