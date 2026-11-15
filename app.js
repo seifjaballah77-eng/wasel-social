@@ -42,6 +42,11 @@ function setConnectionState(state){
  const labels={connecting:"جارٍ الاتصال…",online:"متصل",offline:"غير متصل بالإنترنت",service:"تعذر الوصول إلى الخدمة",ready:"جاهز للاتصال"};
  node.textContent=labels[state]||labels.connecting;
  node.dataset.state=state;
+ const dot=node.parentElement?.querySelector("i");
+ if(dot){
+  const color=state==="online"?"#39e6a0":state==="offline"||state==="service"?"#ff657a":state==="ready"?"#9aa8bb":"#f4c45e";
+  dot.style.background=color;dot.style.boxShadow="0 0 10px "+color;
+ }
 }
 async function api(path,options={}){
  if(!navigator.onLine){setConnectionState("offline");throw new TypeError("لا يوجد اتصال بالإنترنت");}
