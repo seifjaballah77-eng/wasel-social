@@ -1044,3 +1044,5 @@ body.mobile-chat-open .topbar .profile-open {
 .admin-extra-content textarea{display:block;width:100%;min-height:95px;margin:8px 0;padding:12px;border:1px solid var(--line,rgba(120,140,160,.25));border-radius:12px;background:var(--input-bg,#111923);color:inherit;font:inherit}
 .admin-extra-content>button{justify-self:start;border:0;border-radius:10px;padding:10px 16px;background:var(--accent,#7288ff);color:white;cursor:pointer}
 @media(max-width:600px){.admin-tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.admin-tabs button{font-size:.82rem}}
+
+.seif-global-announcement{position:sticky;top:0;z-index:9998;padding:11px 18px;text-align:center;background:#3a2d13;color:#ffe6a6;border-bottom:1px solid #9c7735;font-weight:700;box-shadow:0 5px 20px #0003}
