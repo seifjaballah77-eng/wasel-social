@@ -16,11 +16,12 @@ let moderationCache = null, moderationCheckedAt = 0, moderationOverlay = null;
 async function loadPublicAppSettings(){
  try{
   const result=await moderationRequest({action:"public_settings",user_id:myId});
-  const message=String(result.announcement||"").trim();
+  const message=String(result.announcement||"").trim(),links=result.supportLinks||{};
   let banner=document.getElementById("seifGlobalAnnouncement");
-  if(!message){banner?.remove();return;}
+  if(!message&&!links.support&&!links.telegram){banner?.remove();return;}
   if(!banner){banner=document.createElement("div");banner.id="seifGlobalAnnouncement";banner.className="seif-global-announcement";banner.setAttribute("role","status");document.body.prepend(banner);}
-  banner.textContent=message;
+  banner.replaceChildren();if(message){const textNode=document.createElement("span");textNode.textContent=message;banner.append(textNode);}
+  [["الدعم الفني",links.support],["تيليجرام",links.telegram]].forEach(([label,url])=>{if(/^https:\/\//i.test(String(url||""))){const a=document.createElement("a");a.href=url;a.target="_blank";a.rel="noopener noreferrer";a.textContent=label;banner.append(" · ",a);}});
  }catch(error){console.warn("Public app settings unavailable",error);}
 }
 function status(text,error=false){$("callStatus").textContent=text;$("callStatus").className="statusline"+(error?" error":"");}
@@ -904,7 +905,7 @@ function createOwnerPanel(registeredGoldDeviceId=null){
 const currentGoldDeviceId=ownerGoldDeviceId();let activeGoldDeviceId=registeredGoldDeviceId||null;applyOwnerGoldStyle(activeGoldDeviceId===currentGoldDeviceId);const blockOption=document.querySelector('[data-menu-action="block"]');if(blockOption)blockOption.textContent="تعليق حساب هذا الشخص";
  const top=document.querySelector(".topright");if(!top||document.getElementById("seifAdminButton"))return;
  const button=document.createElement("button");button.id="seifAdminButton";button.className="seif-admin-button";button.type="button";button.title="لوحة الإدارة";button.innerHTML='<span aria-hidden="true">♛</span> الإدارة';top.prepend(button);
- const overlay=document.createElement("div");overlay.id="seifAdminOverlay";overlay.className="seif-admin-overlay";overlay.hidden=true;overlay.innerHTML='<section class="seif-admin-panel" dir="rtl" role="dialog" aria-modal="true"><header><div><span class="admin-kicker">SEIF MESSAGES · CONTROL CENTER</span><h2>لوحة الإدارة</h2><p>إدارة التعليقات ومراجعة اعتراضات المستخدمين</p></div><button type="button" class="admin-close" aria-label="إغلاق">×</button></header><div class="admin-user-tools"><h3>إدارة حساب يدويًا</h3><input id="ownerTargetName" type="text" placeholder="اسم المستخدم — يكفي الاسم للتعليق" autocomplete="off"><details class="admin-id-optional"><summary>لديك المعرّف؟ (اختياري)</summary><input id="ownerTargetUserId" type="text" placeholder="المعرّف الداخلي إن توفر" autocomplete="off"></details><textarea id="ownerSuspendReason" rows="2" maxlength="500" placeholder="سبب التعليق الذي سيظهر للمستخدم"></textarea><button id="ownerSuspendUser" type="button">تعليق هذا الحساب</button><small>اكتب الاسم كما يظهر في التطبيق. إذا تكرر الاسم ستختار الشخص الصحيح من النتائج. المعرّف اختياري تمامًا.</small></div><div class="admin-stats"><div><strong id="adminTotal">—</strong><span>إجمالي الحالات</span></div><div><strong id="adminPending">—</strong><span>اعتراضات تنتظر المراجعة</span></div></div><div class="admin-extra-tools"><h3>مركز إدارة التطبيق</h3><div class="admin-tabs"><button type="button" data-admin-tab="stats">الإحصائيات</button><button type="button" data-admin-tab="reports">البلاغات</button><button type="button" data-admin-tab="audit">سجل الإدارة</button><button type="button" data-admin-tab="settings">إعدادات التطبيق</button></div><div id="adminExtraContent" class="admin-extra-content"><p>اختر قسمًا لعرض بياناته.</p></div></div><div id="adminModerationList" class="admin-moderation-list"><p>جارٍ تحميل الحالات…</p></div></section>';
+ const overlay=document.createElement("div");overlay.id="seifAdminOverlay";overlay.className="seif-admin-overlay";overlay.hidden=true;overlay.innerHTML='<section class="seif-admin-panel" dir="rtl" role="dialog" aria-modal="true"><header><div><span class="admin-kicker">SEIF MESSAGES · CONTROL CENTER</span><h2>لوحة الإدارة</h2><p>إدارة التعليقات ومراجعة اعتراضات المستخدمين</p></div><button type="button" class="admin-close" aria-label="إغلاق">×</button></header><div class="admin-user-tools"><h3>إدارة حساب يدويًا</h3><input id="ownerTargetName" type="text" placeholder="اسم المستخدم — يكفي الاسم للتعليق" autocomplete="off"><details class="admin-id-optional"><summary>لديك المعرّف؟ (اختياري)</summary><input id="ownerTargetUserId" type="text" placeholder="المعرّف الداخلي إن توفر" autocomplete="off"></details><textarea id="ownerSuspendReason" rows="2" maxlength="500" placeholder="سبب التعليق الذي سيظهر للمستخدم"></textarea><button id="ownerSuspendUser" type="button">تعليق هذا الحساب</button><small>اكتب الاسم كما يظهر في التطبيق. إذا تكرر الاسم ستختار الشخص الصحيح من النتائج. المعرّف اختياري تمامًا.</small></div><div class="admin-stats"><div><strong id="adminTotal">—</strong><span>إجمالي الحالات</span></div><div><strong id="adminPending">—</strong><span>اعتراضات تنتظر المراجعة</span></div></div><div class="admin-extra-tools"><h3>مركز إدارة التطبيق</h3><div class="admin-tabs"><button type="button" data-admin-tab="users">المستخدمون والتوثيق</button><button type="button" data-admin-tab="stats">الإحصائيات</button><button type="button" data-admin-tab="reports">البلاغات</button><button type="button" data-admin-tab="audit">سجل الإدارة</button><button type="button" data-admin-tab="settings">الإعلانات والدعم</button><button type="button" data-admin-tab="security">أمان التشفير</button><button type="button" data-admin-tab="heatmap">النشاط الجغرافي</button></div><div id="adminExtraContent" class="admin-extra-content"><p>اختر قسمًا لعرض بياناته.</p></div></div><div id="adminModerationList" class="admin-moderation-list"><p>جارٍ تحميل الحالات…</p></div></section>';
  document.body.appendChild(overlay);
  const goldButton=document.createElement("button");goldButton.type="button";goldButton.className="admin-gold-toggle";syncOwnerGoldButton(goldButton,activeGoldDeviceId,currentGoldDeviceId);overlay.querySelector(".seif-admin-panel").insertBefore(goldButton,overlay.querySelector(".admin-stats"));
  const goldNote=document.createElement("small");goldNote.className="admin-gold-note";goldNote.textContent="المظهر الذهبي مرتبط بجهاز واحد فقط. عند نقله إلى جهاز آخر يتوقف تلقائيًا على الجهاز السابق.";goldButton.after(goldNote);
@@ -950,7 +951,31 @@ const currentGoldDeviceId=ownerGoldDeviceId();let activeGoldDeviceId=registeredG
   const root=document.getElementById("adminExtraContent");root.textContent="جارٍ التحميل…";
   overlay.querySelectorAll("[data-admin-tab]").forEach(b=>b.classList.toggle("active",b.dataset.adminTab===tab));
   try{
-   if(tab==="stats"){
+   if(tab==="users"){
+    const r=await window.seifModerationAction("people_list","admin-people"),items=r.items||[];root.replaceChildren();
+    const info=document.createElement("small");info.textContent="توثيق الحساب هنا علامة ثقة داخل Seif Messages فقط، ولا يعني تحققًا حكوميًا من الهوية.";root.append(info);
+    if(!items.length){root.append("لا توجد حسابات مسجلة.");return;}
+    items.forEach(item=>{
+     const card=document.createElement("article");card.className="admin-case";
+     const head=document.createElement("div");head.className="admin-case-top";
+     const name=document.createElement("strong");name.textContent=item.display_name||"مستخدم";
+     const state=document.createElement("span");state.className="admin-status "+(item.is_verified?"active":"");state.textContent=item.is_verified?"✓ موثّق":"غير موثّق";head.append(name,state);card.append(head);
+     const seen=document.createElement("small");seen.textContent="آخر ظهور: "+(item.last_seen?new Date(item.last_seen).toLocaleString("ar-TN"):"غير معروف");card.append(seen);
+     const actions=document.createElement("div");actions.className="admin-report-actions";
+     const verify=document.createElement("button");verify.type="button";verify.textContent=item.is_verified?"إزالة العلامة الزرقاء":"توثيق الحساب ✓";
+     verify.addEventListener("click",async()=>{verify.disabled=true;try{await window.seifModerationAction(item.is_verified?"unverify":"verify",item.user_id,{display_name:item.display_name});await loadAdminTab("users");}catch(e){alert(e.message);verify.disabled=false;}});
+     const suspend=document.createElement("button");suspend.type="button";suspend.textContent="حظر مؤقت / دائم";
+     suspend.addEventListener("click",async()=>{const reason=prompt("سبب الحظر:","مخالفة شروط الاستخدام");if(reason===null)return;const hours=prompt("مدة الحظر بالساعات. اكتب 0 للحظر الدائم:","24");if(hours===null)return;const n=Number(hours);if(!Number.isFinite(n)||n<0||n>8760){alert("أدخل عدد ساعات من 0 إلى 8760.");return;}if(!confirm("تأكيد حظر "+(item.display_name||"هذا المستخدم")+"؟"))return;suspend.disabled=true;try{await window.seifModerationAction("suspend",item.user_id,{display_name:item.display_name,reason,duration_hours:n});await loadAdminCases();await loadAdminTab("users");}catch(e){alert(e.message);suspend.disabled=false;}});
+     actions.append(verify,suspend);card.append(actions);root.append(card);
+    });
+   }else if(tab==="security"){
+    root.replaceChildren();const h=document.createElement("strong");h.textContent="فحص حالة التشفير";root.append(h);
+    const warning=document.createElement("p");warning.textContent="تنبيه مهم: النسخة الحالية لا تطبق تشفيرًا تامًا بين الطرفين (E2EE) على الرسائل؛ لا توجد مفاتيح E2EE يمكن اختبارها بعد. وجود HTTPS أو قفل المحادثة المحلي لا يعني أن الرسائل مشفرة من طرف إلى طرف.";root.append(warning);
+    const details=document.createElement("small");details.textContent="لن نعرض مفاتيح سرية أو نطلب نسخها إلى لوحة الإدارة. يلزم تصميم بروتوكول تشفير ومراجعة أمنية قبل تفعيل هذه الميزة.";root.append(details);
+   }else if(tab==="heatmap"){
+    root.replaceChildren();const p=document.createElement("p");p.textContent="الخريطة الحرارية غير متاحة حاليًا: التطبيق لا يجمع بيانات دولة/منطقة موثوقة وموافَقًا عليها لكل مستخدم. لن نخمن موقع الأشخاص من عناوين IP أو نعرض مواقع دقيقة.";root.append(p);
+    const s=document.createElement("small");s.textContent="يمكن إضافتها لاحقًا بإحصاءات مجمّعة حسب الدولة، مع تقليل الدقة وعدم تخزين الموقع الدقيق ومراعاة موافقة المستخدم.";root.append(s);
+   }else if(tab==="stats"){
     const r=await window.seifModerationAction("stats","admin-stats"),v=r.stats||{};
     root.innerHTML='<div class="admin-stat-grid"><article><b>'+Number(v.registeredBrowserIds||0)+'</b><span>معرّفات أجهزة/متصفحات مسجلة</span></article><article><b>'+Number(v.messages||0)+'</b><span>الرسائل</span></article><article><b>'+Number(v.callLogEntries||0)+'</b><span>سجلات المكالمات</span></article><article><b>'+Number(v.pendingReports||0)+'</b><span>بلاغات تنتظر المراجعة</span></article><article><b>'+Number(v.suspendedIds||0)+'</b><span>معرّفات معلّقة</span></article></div><small>تنبيه: الأرقام الحالية تخص معرّفات المتصفح والبيانات الموجودة في النموذج الحالي، وليست عدد حسابات موثقة أو مستخدمين فريدين.</small>';
    }else if(tab==="reports"){
@@ -966,7 +991,11 @@ const currentGoldDeviceId=ownerGoldDeviceId();let activeGoldDeviceId=registeredG
     const existing=Object.fromEntries(items.map(x=>[x.setting_key,x.setting_value]));
     const label=document.createElement("label");label.textContent="رسالة الصيانة / التنبيه العام";const area=document.createElement("textarea");area.maxLength=500;area.placeholder="اتركها فارغة إذا لم توجد رسالة.";area.value=typeof existing.maintenance_message==="string"?existing.maintenance_message:"";label.append(area);
     const save=document.createElement("button");save.type="button";save.textContent="حفظ رسالة التنبيه";save.addEventListener("click",async()=>{save.disabled=true;try{await window.seifModerationAction("settings_set","admin-setting",{setting_key:"maintenance_message",setting_value:area.value.trim()});alert("تم حفظ الإعداد في قاعدة البيانات.");}catch(e){alert(e.message);}finally{save.disabled=false;}});root.append(label,save);
-    const note=document.createElement("small");note.textContent="يتم حفظ الإعداد مركزيًا. لم يتم بعد ربط رسالة الصيانة بواجهة جميع المستخدمين.";root.append(note);
+    const note=document.createElement("small");note.textContent="تظهر الرسالة كشريط إعلان عام داخل Seif Messages لجميع المستخدمين عند فتح التطبيق. اتركها فارغة لإخفائها.";root.append(note);
+    const links=existing.support_links&&typeof existing.support_links==="object"?existing.support_links:{};
+    const supportLabel=document.createElement("label");supportLabel.textContent="رابط الدعم الفني";const support=document.createElement("input");support.type="url";support.placeholder="https://…";support.value=links.support||"";supportLabel.append(support);root.append(supportLabel);
+    const telegramLabel=document.createElement("label");telegramLabel.textContent="قناة تيليجرام";const telegram=document.createElement("input");telegram.type="url";telegram.placeholder="https://t.me/…";telegram.value=links.telegram||"";telegramLabel.append(telegram);root.append(telegramLabel);
+    const saveLinks=document.createElement("button");saveLinks.type="button";saveLinks.textContent="حفظ روابط التواصل";saveLinks.addEventListener("click",async()=>{saveLinks.disabled=true;try{const valid=u=>!u||/^https:\/\//i.test(u);if(!valid(support.value.trim())||!valid(telegram.value.trim()))throw new Error("استخدم روابط HTTPS صحيحة.");await window.seifModerationAction("settings_set","admin-links",{setting_key:"support_links",setting_value:{support:support.value.trim(),telegram:telegram.value.trim()}});alert("تم حفظ روابط التواصل.");}catch(e){alert(e.message);}finally{saveLinks.disabled=false;}});root.append(saveLinks);
    }
   }catch(error){root.textContent=error.message||"تعذر تحميل هذا القسم.";}
  }
@@ -982,7 +1011,7 @@ const currentGoldDeviceId=ownerGoldDeviceId();let activeGoldDeviceId=registeredG
     const article=document.createElement("article");article.className="admin-case";
     const topLine=document.createElement("div");topLine.className="admin-case-top";
     const name=document.createElement("strong");name.textContent=item.display_name||"مستخدم";topLine.appendChild(name);
-    const badge=document.createElement("span");badge.className=item.is_suspended?"admin-status suspended":"admin-status active";badge.textContent=item.is_suspended?"معلّق":"مرفوع";topLine.appendChild(badge);article.appendChild(topLine);
+    const badge=document.createElement("span");badge.className=item.is_suspended?"admin-status suspended":"admin-status active";badge.textContent=item.is_suspended?(item.suspension_type==="temporary"?"حظر مؤقت":"حظر دائم"):"غير محظور";topLine.appendChild(badge);if(item.is_verified){const verified=document.createElement("span");verified.className="admin-status active";verified.textContent="✓ موثّق";topLine.appendChild(verified);}article.appendChild(topLine);
     const id=document.createElement("code");id.textContent="ID: "+item.user_id;article.appendChild(id);
     const why=document.createElement("p");why.textContent="السبب: "+(item.suspension_reason||"—");article.appendChild(why);
     if(item.appeal_text){const appeal=document.createElement("div");appeal.className="admin-appeal";const heading=document.createElement("b");heading.textContent="شرح المستخدم:";const content=document.createElement("p");content.textContent=item.appeal_text;appeal.append(heading,content);article.appendChild(appeal);}
