@@ -237,3 +237,13 @@ grant all on public.wasel_account_moderation to service_role;
 comment on table public.wasel_account_moderation is
   'Server-managed suspension records and user appeals for Seif Messages.';
 notify pgrst, 'reload schema';
+
+
+-- Register exactly one device for the owner's gold appearance.
+alter table public.seif_admin_roles add column if not exists gold_device_id text;
+revoke update on table public.seif_admin_roles from authenticated;
+grant update (gold_device_id) on table public.seif_admin_roles to authenticated;
+drop policy if exists "Owner can register one gold-theme device" on public.seif_admin_roles;
+create policy "Owner can register one gold-theme device" on public.seif_admin_roles for update to authenticated
+using ((select auth.uid()) = user_id and role = 'owner' and coalesce((select (auth.jwt() ->> 'is_anonymous')::boolean), true) = false)
+with check ((select auth.uid()) = user_id and role = 'owner' and coalesce((select (auth.jwt() ->> 'is_anonymous')::boolean), true) = false);
