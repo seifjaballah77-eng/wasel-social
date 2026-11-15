@@ -26,7 +26,7 @@ async function loadPublicAppSettings(){
 }
 function status(text,error=false){$("callStatus").textContent=text;$("callStatus").className="statusline"+(error?" error":"");}
 function currentName(){return localStorage.getItem(PROFILE_KEY)||"";}
-function isSeifOwnerView(){return window.seifIsOwner===true||myId===SEIF_ARABIC_ID;}
+function isSeifOwnerView(){return window.seifIsOwner===true;}
 function canContact(id){if(!isSeifOwnerView()&&id!==SEIF_ARABIC_ID)return false;return !((myId===DOTS_ACCOUNT_ID&&id===ROUA_ID)||(myId===ROUA_ID&&id===DOTS_ACCOUNT_ID));}
 function addSeifCrown(parent){
  const crown=document.createElement("span");crown.className="seif-owner-crown";crown.textContent="♛";crown.title="الحساب الرسمي لسيف";crown.setAttribute("aria-label","الحساب الرسمي لسيف");parent.appendChild(crown);return crown;
