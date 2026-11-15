@@ -99,11 +99,31 @@ function loadJitsiScript(){
  callScriptPromise=new Promise((resolve,reject)=>{const script=document.createElement("script");script.src="https://meet.jit.si/external_api.js";script.async=true;script.onload=()=>window.JitsiMeetExternalAPI?resolve():reject(new Error("تعذر تحميل مكتبة الاتصال."));script.onerror=()=>reject(new Error("تعذر الوصول إلى خدمة الاتصال. تحقق من الإنترنت."));document.head.appendChild(script);});
  return callScriptPromise;
 }
+async function testCallConnection(kind){
+ if(!navigator.mediaDevices?.getUserMedia){status("هذا المتصفح لا يدعم اختبار الميكروفون والكاميرا عبر اتصال آمن HTTPS.",true);return false;}
+ let stream=null;
+ try{
+  status("جارٍ اختبار الميكروفون"+(kind==="video"?" والكاميرا":"")+" والاتصال…");
+  stream=await navigator.mediaDevices.getUserMedia({audio:true,video:kind==="video"});
+  const audioOk=stream.getAudioTracks().some(t=>t.readyState==="live");
+  const videoOk=kind!=="video"||stream.getVideoTracks().some(t=>t.readyState==="live");
+  await loadJitsiScript();
+  stream.getTracks().forEach(t=>t.stop());stream=null;
+  const summary="نتيجة الاختبار:\nالميكروفون: "+(audioOk?"جاهز":"غير متاح")+"\n"+(kind==="video"?"الكاميرا: "+(videoOk?"جاهزة":"غير متاحة")+"\n":"")+"خدمة الاتصال: تم تحميلها بنجاح.\n\nهل تريد بدء المكالمة؟";
+  if(!audioOk||!videoOk){alert(summary);return false;}
+  return confirm(summary);
+ }catch(error){
+  if(stream)stream.getTracks().forEach(t=>t.stop());
+  const message=error?.name==="NotAllowedError"?"لم تسمح للمتصفح باستخدام الميكروفون أو الكاميرا.":error?.name==="NotFoundError"?"لم يتم العثور على جهاز صوت أو كاميرا مناسب.":("فشل الاختبار: "+(error.message||"خطأ غير معروف"));
+  status(message,true);alert(message+"\nتحقق من أذونات الموقع والأجهزة ثم أعد المحاولة.");return false;
+ }
+}
 async function startCall(kind,isIncoming=false,sharedRoomName=null){
  if(selectedId&&!canContact(selectedId)){contactRestrictionNotice();return;}
  if(!selectedId||selectedId===myId){status("اختر صديقًا من قائمة الأشخاص أولًا.",true);return;}
  const person=people.find(p=>p.user_id===selectedId);if(!person){status("لم يتم العثور على جهة الاتصال. حدّث قائمة الأشخاص أولًا.",true);return;}
  if(activeCallApi||activeCallInfo){status("هناك مكالمة جارية بالفعل.",true);return;}
+ if(!isIncoming&&!await testCallConnection(kind)){status("تم إلغاء المكالمة قبل الاتصال.",true);return;}
  const peerId=selectedId;
  const roomName=sharedRoomName||("seifmessages-"+[myId,peerId].sort().join("-")+"-"+crypto.randomUUID());
  let offerMessageId=null;
