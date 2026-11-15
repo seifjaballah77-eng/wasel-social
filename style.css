@@ -938,3 +938,10 @@ body.mobile-chat-open .topbar .profile-open {
 .call-note{padding:6px 12px;font-size:12px}
 .jitsi-mount{background:#080d17;flex:1;min-height:0}
 @media(max-width:620px){.call-card{height:88vh;width:100%;border-radius:12px}.call-card-head{padding:9px 11px}}
+
+
+/* Shareable profile and conversation links */
+.share-link-button{display:flex;width:100%;min-height:42px;align-items:center;justify-content:center;margin:10px 0 0;padding:10px 14px;border:1px solid #b58b36;border-radius:11px;background:linear-gradient(135deg,#3b2b12,#171b24);color:#f4d58a;font:inherit;font-size:13px;font-weight:800;cursor:pointer;transition:transform .15s ease,border-color .15s ease,box-shadow .15s ease}
+.share-link-button:hover{border-color:#f2cc72;box-shadow:0 0 18px rgba(218,170,69,.16);transform:translateY(-1px)}
+.share-link-button:focus-visible{outline:2px solid #f2cc72;outline-offset:2px}
+.contact-card .share-link-button{margin-top:9px}
