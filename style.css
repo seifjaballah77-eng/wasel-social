@@ -928,3 +928,13 @@ body.mobile-chat-open .topbar .profile-open {
 .voice-speed-button{display:inline-flex;align-items:center;justify-content:center;margin:5px 4px 0 0;padding:4px 9px;border:1px solid #31516f;border-radius:8px;background:#102139;color:#9fffe2;font:inherit;font-size:11px;font-weight:800;cursor:pointer}
 .voice-speed-button:focus-visible,.call-mini-toggle:focus-visible{outline:2px solid #58e8ff;outline-offset:2px}
 @media(max-width:620px){.call-overlay.is-minimized{padding:8px}.call-overlay.is-minimized .call-card{margin-bottom:68px;width:min(270px,calc(100vw - 16px))}}
+
+
+/* Simple, uncluttered call window */
+.call-card{width:min(100%,900px);height:min(82vh,680px);border-radius:16px}
+.call-card-head{padding:10px 14px;min-height:48px}
+.call-card-head strong{font-size:15px;font-weight:700}
+.call-close{padding:7px 13px;border-radius:9px;font-size:13px}
+.call-note{padding:6px 12px;font-size:12px}
+.jitsi-mount{background:#080d17;flex:1;min-height:0}
+@media(max-width:620px){.call-card{height:88vh;width:100%;border-radius:12px}.call-card-head{padding:9px 11px}}
