@@ -359,13 +359,29 @@ async function shareAppLink(kind,id,label){
   else{window.prompt("انسخ الرابط التالي:",url);}
  }catch(e){if(e.name!=="AbortError")status("تعذرت مشاركة الرابط تلقائيًا؛ يمكنك نسخه من النافذة.",true);}
 }
+async function shareConversationLink(peerId){
+ const url=new URL(location.href);url.searchParams.delete("refresh");url.searchParams.delete("user");url.searchParams.delete("chat");url.searchParams.delete("with");url.searchParams.set("chat",myId);url.searchParams.set("with",peerId);
+ try{
+  if(navigator.share){await navigator.share({title:"Seif Messages",text:"رابط هذه المحادثة على Seif Messages",url:url.toString()});status("تم فتح نافذة مشاركة رابط المحادثة.");}
+  else if(navigator.clipboard&&window.isSecureContext){await navigator.clipboard.writeText(url.toString());status("تم نسخ رابط المحادثة.");}
+  else{window.prompt("انسخ رابط المحادثة:",url.toString());}
+ }catch(e){if(e.name!=="AbortError")status("تعذرت مشاركة الرابط تلقائيًا؛ يمكنك نسخه من النافذة.",true);}
+}
 let sharedLinkHandled=false;
 async function handleSharedLink(){
  if(sharedLinkHandled||!currentName())return;
- const params=new URLSearchParams(location.search),chatId=params.get("chat"),userId=params.get("user");
- const target=chatId||userId;if(!target)return;
+ const params=new URLSearchParams(location.search),chatId=params.get("chat"),withId=params.get("with"),userId=params.get("user");
+ if(!chatId&&!userId)return;
  sharedLinkHandled=true;
- if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(target)){status("رابط Seif Messages غير صالح.",true);return;}
+ let target=userId;
+ if(chatId){
+  if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(chatId)){status("رابط Seif Messages غير صالح.",true);return;}
+  if(withId){
+   if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(withId)){status("رابط المحادثة غير صالح.",true);return;}
+   if(myId===chatId)target=withId;else if(myId===withId)target=chatId;else{status("هذا رابط محادثة مخصص لطرفيها. استخدم رابط الملف الشخصي لبدء محادثة جديدة.",true);return;}
+  }else target=chatId;
+ }
+ if(!target||!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(target)){status("رابط Seif Messages غير صالح.",true);return;}
  const person=people.find(p=>p.user_id===target);
  if(!person){status("لم نعثر على هذا الحساب. اطلب من صاحبه فتح التطبيق وتحديث ملفه أولًا.",true);return;}
  if(chatId){await selectPerson(target);status("تم فتح المحادثة من الرابط.");}
@@ -380,7 +396,7 @@ function openContactProfile(personId=selectedId){
  const share=document.createElement("button");share.type="button";share.className="primary-button share-link-button";share.textContent="مشاركة رابط الملف الشخصي";
  share.addEventListener("click",()=>shareAppLink("user",p.user_id,"افتح ملفي على Seif Messages"));
  const chatShare=document.createElement("button");chatShare.type="button";chatShare.className="secondary-button share-link-button";chatShare.textContent="مشاركة رابط المحادثة";
- chatShare.addEventListener("click",()=>shareAppLink("chat",p.user_id,"ابدأ محادثة معي على Seif Messages"));
+ chatShare.addEventListener("click",()=>shareConversationLink(p.user_id));
  root.append(avatar,name,state,share,chatShare);$("contactBio").textContent=p.user_id===myId?(localStorage.getItem(BIO_KEY)||""):"";$("contactModal").hidden=false;
 }
 function openImageViewer(src){$("imageViewerImage").src=src;$("imageViewer").hidden=false;}
