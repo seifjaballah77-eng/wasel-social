@@ -13,6 +13,16 @@ const headers={"apikey":SUPABASE_KEY,"Authorization":"Bearer "+SUPABASE_KEY,"Con
 const MODERATION_URL = SUPABASE_URL + "/functions/v1/wasel-moderation";
 const OWNER_GOLD_DEVICE_KEY = "seif-owner-gold-device-id-v1";
 let moderationCache = null, moderationCheckedAt = 0, moderationOverlay = null;
+async function loadPublicAppSettings(){
+ try{
+  const result=await moderationRequest({action:"public_settings",user_id:myId});
+  const message=String(result.announcement||"").trim();
+  let banner=document.getElementById("seifGlobalAnnouncement");
+  if(!message){banner?.remove();return;}
+  if(!banner){banner=document.createElement("div");banner.id="seifGlobalAnnouncement";banner.className="seif-global-announcement";banner.setAttribute("role","status");document.body.prepend(banner);}
+  banner.textContent=message;
+ }catch(error){console.warn("Public app settings unavailable",error);}
+}
 function status(text,error=false){$("callStatus").textContent=text;$("callStatus").className="statusline"+(error?" error":"");}
 function currentName(){return localStorage.getItem(PROFILE_KEY)||"";}
 function canContact(id){return !((myId===DOTS_ACCOUNT_ID&&id===ROUA_ID)||(myId===ROUA_ID&&id===DOTS_ACCOUNT_ID));}
@@ -654,7 +664,7 @@ function setupMobileKeyboard(){
 }
 
 let lastBackgroundSync=Date.now();
-function start(){if(selectedId&&!canContact(selectedId)){selectedId=null;localStorage.removeItem(SELECTED_KEY);}setupMobileNavigation();setupMobileKeyboard();installPrivacyControls();installOfflineQueue();setupExtras();installFloatingActions();ensureLocalAccount();setupAutoLock();applyTheme(localStorage.getItem(THEME_KEY)||"blue");applyMode("dark");const name=currentName();$("nameSetup").hidden=Boolean(name);$("identity").textContent=name?"أهلاً، "+name:"لم تختر اسمًا بعد";$("setupNotice").hidden=true;$("setupNotice").textContent=""; $("messageText").disabled=true;$("sendMessage").disabled=true;$("chatImage").disabled=true;renderPeople();if(name)refresh();setInterval(()=>{if(document.visibilityState==="visible"){lastBackgroundSync=Date.now();refresh();}else if(Date.now()-lastBackgroundSync>=3000){lastBackgroundSync=Date.now();refresh();}},3000);}
+function start(){if(selectedId&&!canContact(selectedId)){selectedId=null;localStorage.removeItem(SELECTED_KEY);}setupMobileNavigation();setupMobileKeyboard();installPrivacyControls();installOfflineQueue();setupExtras();installFloatingActions();loadPublicAppSettings();ensureLocalAccount();setupAutoLock();applyTheme(localStorage.getItem(THEME_KEY)||"blue");applyMode("dark");const name=currentName();$("nameSetup").hidden=Boolean(name);$("identity").textContent=name?"أهلاً، "+name:"لم تختر اسمًا بعد";$("setupNotice").hidden=true;$("setupNotice").textContent=""; $("messageText").disabled=true;$("sendMessage").disabled=true;$("chatImage").disabled=true;renderPeople();if(name)refresh();setInterval(()=>{if(document.visibilityState==="visible"){lastBackgroundSync=Date.now();refresh();}else if(Date.now()-lastBackgroundSync>=3000){lastBackgroundSync=Date.now();refresh();}},3000);}
 
 const notificationsButton=$("notificationsButton");if(notificationsButton&&!notificationsButton.dataset.ready){notificationsButton.dataset.ready="1";notificationsButton.addEventListener("click",async()=>{if(("Notification"in window)&&Notification.permission==="granted"&&localStorage.getItem(NOTIFY_KEY)==="on"){localStorage.setItem(NOTIFY_KEY,"off");syncNotificationButton();status("تم إيقاف إشعارات الرسائل على هذا الجهاز.");return;}await enableNotifications();});syncNotificationButton();}
 const manualRefreshButton=$("manualRefresh");if(manualRefreshButton&&!manualRefreshButton.dataset.ready){manualRefreshButton.dataset.ready="1";manualRefreshButton.addEventListener("click",async()=>{if(manualRefreshButton.disabled)return;manualRefreshButton.disabled=true;manualRefreshButton.setAttribute("aria-busy","true");manualRefreshButton.title="جارٍ تحديث التطبيق…";try{if("serviceWorker" in navigator){const regs=await navigator.serviceWorker.getRegistrations();await Promise.all(regs.map(reg=>reg.unregister()));}if("caches" in window){const keys=await caches.keys();await Promise.all(keys.map(key=>caches.delete(key)));}}catch(e){}const url=new URL(window.location.href);url.searchParams.set("refresh",String(Date.now()));window.location.replace(url.toString());});}
