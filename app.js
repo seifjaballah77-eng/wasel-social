@@ -833,7 +833,7 @@ function installFloatingActions(){
   ["theme","chevron","تبديل الوضع"]
  ];
  actions.forEach(([action,icon,label])=>{const b=document.createElement("button");b.type="button";b.className="seif-floating-action";b.dataset.fabAction=action;b.setAttribute("aria-label",label);b.title=label;b.innerHTML=uiIcon(icon)+"<span>"+label+"</span>";menu.appendChild(b);});
- const toggle=document.createElement("button");toggle.type="button";toggle.className="seif-floating-toggle";toggle.setAttribute("aria-label","فتح الاختصارات السريعة");toggle.setAttribute("aria-expanded","false");toggle.innerHTML=uiIcon("more");
+ const toggle=document.createElement("button");toggle.type="button";toggle.className="seif-floating-toggle";toggle.setAttribute("aria-label","فتح الاختصارات السريعة");toggle.setAttribute("aria-expanded","false");toggle.innerHTML='<svg class="ui-icon" aria-hidden="true" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>';
  toggle.addEventListener("click",()=>{menu.hidden=!menu.hidden;toggle.setAttribute("aria-expanded",String(!menu.hidden));toggle.setAttribute("aria-label",menu.hidden?"فتح الاختصارات السريعة":"إغلاق الاختصارات السريعة");wrap.classList.toggle("is-open",!menu.hidden);});
  menu.addEventListener("click",e=>{const b=e.target.closest("[data-fab-action]");if(!b)return;menu.hidden=true;toggle.setAttribute("aria-expanded","false");toggle.setAttribute("aria-label","فتح الاختصارات السريعة");wrap.classList.remove("is-open");switch(b.dataset.fabAction){
   case "message":$("messageText")?.focus();break;
