@@ -1046,3 +1046,12 @@ body.mobile-chat-open .topbar .profile-open {
 @media(max-width:600px){.admin-tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.admin-tabs button{font-size:.82rem}}
 
 .seif-global-announcement{position:sticky;top:0;z-index:9998;padding:11px 18px;text-align:center;background:#3a2d13;color:#ffe6a6;border-bottom:1px solid #9c7735;font-weight:700;box-shadow:0 5px 20px #0003}
+
+/* Owner dashboard interaction polish */
+.seif-admin-panel button,.seif-admin-panel input,.seif-admin-panel textarea{transition:transform .16s cubic-bezier(.2,.8,.2,1),box-shadow .18s ease,border-color .18s ease}
+.seif-admin-panel button:active{transform:scale(.95)}
+.seif-admin-panel button:focus-visible,.seif-admin-panel input:focus-visible,.seif-admin-panel textarea:focus-visible{outline:2px solid var(--accent,#d8ad58);outline-offset:3px}
+.seif-admin-panel .admin-case{transition:box-shadow .2s ease,border-color .2s ease}
+.seif-admin-panel .admin-case:hover{border-color:var(--accent,#c89b4c);box-shadow:0 0 18px rgba(200,155,76,.13)}
+.seif-global-announcement a{color:inherit;text-decoration:underline;text-underline-offset:3px;margin-inline:5px}
+@media(prefers-reduced-motion:reduce){.seif-admin-panel button,.seif-admin-panel .admin-case{transition:none}}
