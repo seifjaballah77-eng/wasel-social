@@ -11,6 +11,7 @@ localStorage.setItem(ID_KEY,myId);
 let lastMessagesByUser={},people=[],selectedId=localStorage.getItem(SELECTED_KEY)||null,messages=[],unreadCounts={},lastSignature="",polling=false,replyTo=null,typingTimer=null,lastIncomingId=0,notifiedIds=new Set(),messageSearchTerm="";
 const headers={"apikey":SUPABASE_KEY,"Authorization":"Bearer "+SUPABASE_KEY,"Content-Type":"application/json"};
 const MODERATION_URL = SUPABASE_URL + "/functions/v1/wasel-moderation";
+const OWNER_GOLD_KEY = "seif-owner-gold-device-v1";
 let moderationCache = null, moderationCheckedAt = 0, moderationOverlay = null;
 function status(text,error=false){$("callStatus").textContent=text;$("callStatus").className="statusline"+(error?" error":"");}
 function currentName(){return localStorage.getItem(PROFILE_KEY)||"";}
@@ -620,7 +621,7 @@ function setupMobileKeyboard(){
 }
 
 let lastBackgroundSync=Date.now();
-function start(){if(selectedId&&!canContact(selectedId)){selectedId=null;localStorage.removeItem(SELECTED_KEY);}setupMobileNavigation();setupMobileKeyboard();installPrivacyControls();installOfflineQueue();setupExtras();ensureLocalAccount();setupAutoLock();applyTheme(localStorage.getItem(THEME_KEY)||"blue");applyMode("dark");const name=currentName();$("nameSetup").hidden=Boolean(name);$("identity").textContent=name?"أهلاً، "+name:"لم تختر اسمًا بعد";$("setupNotice").hidden=true;$("setupNotice").textContent=""; $("messageText").disabled=true;$("sendMessage").disabled=true;$("chatImage").disabled=true;renderPeople();if(name)refresh();setInterval(()=>{if(document.visibilityState==="visible"){lastBackgroundSync=Date.now();refresh();}else if(Date.now()-lastBackgroundSync>=3000){lastBackgroundSync=Date.now();refresh();}},3000);}
+function start(){if(selectedId&&!canContact(selectedId)){selectedId=null;localStorage.removeItem(SELECTED_KEY);}setupMobileNavigation();setupMobileKeyboard();installPrivacyControls();installOfflineQueue();setupExtras();installFloatingActions();ensureLocalAccount();setupAutoLock();applyTheme(localStorage.getItem(THEME_KEY)||"blue");applyMode("dark");const name=currentName();$("nameSetup").hidden=Boolean(name);$("identity").textContent=name?"أهلاً، "+name:"لم تختر اسمًا بعد";$("setupNotice").hidden=true;$("setupNotice").textContent=""; $("messageText").disabled=true;$("sendMessage").disabled=true;$("chatImage").disabled=true;renderPeople();if(name)refresh();setInterval(()=>{if(document.visibilityState==="visible"){lastBackgroundSync=Date.now();refresh();}else if(Date.now()-lastBackgroundSync>=3000){lastBackgroundSync=Date.now();refresh();}},3000);}
 
 const notificationsButton=$("notificationsButton");if(notificationsButton&&!notificationsButton.dataset.ready){notificationsButton.dataset.ready="1";notificationsButton.addEventListener("click",async()=>{if(("Notification"in window)&&Notification.permission==="granted"&&localStorage.getItem(NOTIFY_KEY)==="on"){localStorage.setItem(NOTIFY_KEY,"off");syncNotificationButton();status("تم إيقاف إشعارات الرسائل على هذا الجهاز.");return;}await enableNotifications();});syncNotificationButton();}
 const manualRefreshButton=$("manualRefresh");if(manualRefreshButton&&!manualRefreshButton.dataset.ready){manualRefreshButton.dataset.ready="1";manualRefreshButton.addEventListener("click",async()=>{if(manualRefreshButton.disabled)return;manualRefreshButton.disabled=true;manualRefreshButton.setAttribute("aria-busy","true");manualRefreshButton.title="جارٍ تحديث التطبيق…";try{if("serviceWorker" in navigator){const regs=await navigator.serviceWorker.getRegistrations();await Promise.all(regs.map(reg=>reg.unregister()));}if("caches" in window){const keys=await caches.keys();await Promise.all(keys.map(key=>caches.delete(key)));}}catch(e){}const url=new URL(window.location.href);url.searchParams.set("refresh",String(Date.now()));window.location.replace(url.toString());});}
@@ -816,12 +817,57 @@ async function loadSeifOwnerClient(){
   return seifOwnerClient;
  });return seifOwnerLoading;
 }
+
+function installFloatingActions(){
+ if(document.getElementById("seifFloatingActions"))return;
+ const wrap=document.createElement("div");wrap.id="seifFloatingActions";wrap.className="seif-floating-actions";
+ const menu=document.createElement("div");menu.className="seif-floating-menu";menu.hidden=true;menu.setAttribute("aria-label","اختصارات سريعة");
+ const actions=[
+  ["message","mail","كتابة رسالة"],
+  ["attach","paperclip","إرسال مرفق"],
+  ["audio","phone","مكالمة صوتية"],
+  ["video","video","مكالمة فيديو"],
+  ["history","status","سجل المكالمات"],
+  ["profile","edit","إعدادات الحساب"],
+  ["theme","chevron","تبديل الوضع"]
+ ];
+ actions.forEach(([action,icon,label])=>{const b=document.createElement("button");b.type="button";b.className="seif-floating-action";b.dataset.fabAction=action;b.setAttribute("aria-label",label);b.title=label;b.innerHTML=uiIcon(icon)+"<span>"+label+"</span>";menu.appendChild(b);});
+ const toggle=document.createElement("button");toggle.type="button";toggle.className="seif-floating-toggle";toggle.setAttribute("aria-label","فتح الاختصارات السريعة");toggle.setAttribute("aria-expanded","false");toggle.innerHTML=uiIcon("more");
+ toggle.addEventListener("click",()=>{menu.hidden=!menu.hidden;toggle.setAttribute("aria-expanded",String(!menu.hidden));toggle.setAttribute("aria-label",menu.hidden?"فتح الاختصارات السريعة":"إغلاق الاختصارات السريعة");wrap.classList.toggle("is-open",!menu.hidden);});
+ menu.addEventListener("click",e=>{const b=e.target.closest("[data-fab-action]");if(!b)return;menu.hidden=true;toggle.setAttribute("aria-expanded","false");toggle.setAttribute("aria-label","فتح الاختصارات السريعة");wrap.classList.remove("is-open");switch(b.dataset.fabAction){
+  case "message":$("messageText")?.focus();break;
+  case "attach":$("attachmentToggle")?.click();break;
+  case "audio":$("voiceCall")?.click();break;
+  case "video":$("videoCall")?.click();break;
+  case "history":openCallsHistory();break;
+  case "profile":openProfile();break;
+  case "theme":applyMode(document.documentElement.dataset.mode==="dark"?"light":"dark");break;
+ }});
+ document.addEventListener("click",e=>{if(!wrap.contains(e.target)){menu.hidden=true;toggle.setAttribute("aria-expanded","false");toggle.setAttribute("aria-label","فتح الاختصارات السريعة");wrap.classList.remove("is-open");}});
+ wrap.append(menu,toggle);document.body.appendChild(wrap);
+}
+
+
+function applyOwnerGoldStyle(enabled){
+ const existing=document.getElementById("seifOwnerGoldStyles");
+ if(!enabled){existing?.remove();document.documentElement.removeAttribute("data-owner-gold");return;}
+ document.documentElement.setAttribute("data-owner-gold","true");
+ if(!existing){const link=document.createElement("link");link.id="seifOwnerGoldStyles";link.rel="stylesheet";link.href="./owner-gold.css?v=1";document.head.appendChild(link);}
+}
+function syncOwnerGoldButton(button){
+ const enabled=localStorage.getItem(OWNER_GOLD_KEY)==="enabled";
+ button.textContent=enabled?"إيقاف المظهر الذهبي عن هذا الجهاز":"تفعيل المظهر الذهبي على هذا الجهاز";
+ button.setAttribute("aria-pressed",String(enabled));
+}
+
 function createOwnerPanel(){
- window.seifIsOwner=true;const blockOption=document.querySelector('[data-menu-action="block"]');if(blockOption)blockOption.textContent="تعليق حساب هذا الشخص";
+ window.seifIsOwner=true;applyOwnerGoldStyle(localStorage.getItem(OWNER_GOLD_KEY)==="enabled");const blockOption=document.querySelector('[data-menu-action="block"]');if(blockOption)blockOption.textContent="تعليق حساب هذا الشخص";
  const top=document.querySelector(".topright");if(!top||document.getElementById("seifAdminButton"))return;
  const button=document.createElement("button");button.id="seifAdminButton";button.className="seif-admin-button";button.type="button";button.title="لوحة الإدارة";button.innerHTML='<span aria-hidden="true">♛</span> الإدارة';top.prepend(button);
  const overlay=document.createElement("div");overlay.id="seifAdminOverlay";overlay.className="seif-admin-overlay";overlay.hidden=true;overlay.innerHTML='<section class="seif-admin-panel" dir="rtl" role="dialog" aria-modal="true"><header><div><span class="admin-kicker">SEIF MESSAGES · CONTROL CENTER</span><h2>لوحة الإدارة</h2><p>إدارة التعليقات ومراجعة اعتراضات المستخدمين</p></div><button type="button" class="admin-close" aria-label="إغلاق">×</button></header><div class="admin-stats"><div><strong id="adminTotal">—</strong><span>إجمالي الحالات</span></div><div><strong id="adminPending">—</strong><span>اعتراضات تنتظر المراجعة</span></div></div><div id="adminModerationList" class="admin-moderation-list"><p>جارٍ تحميل الحالات…</p></div></section>';
  document.body.appendChild(overlay);
+ const goldButton=document.createElement("button");goldButton.type="button";goldButton.className="admin-gold-toggle";syncOwnerGoldButton(goldButton);overlay.querySelector(".seif-admin-panel").insertBefore(goldButton,overlay.querySelector(".admin-stats"));
+ goldButton.addEventListener("click",()=>{const enabled=localStorage.getItem(OWNER_GOLD_KEY)!=="enabled";if(enabled)localStorage.setItem(OWNER_GOLD_KEY,"enabled");else localStorage.removeItem(OWNER_GOLD_KEY);applyOwnerGoldStyle(enabled);syncOwnerGoldButton(goldButton);});
  const close=()=>overlay.hidden=true;overlay.querySelector(".admin-close").addEventListener("click",close);overlay.addEventListener("click",e=>{if(e.target===overlay)close();});button.addEventListener("click",async()=>{overlay.hidden=false;await loadAdminCases();});
  async function loadAdminCases(){
   const root=document.getElementById("adminModerationList");root.textContent="جارٍ تحميل الحالات…";
