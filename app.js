@@ -348,7 +348,41 @@ function handleChatMenu(action){
  if(action==="clear"){if(!confirm("مسح عرض هذه المحادثة؟ لن نحذف الرسائل من قاعدة البيانات."))return;messages=[];lastSignature="";renderMessages();status("تم مسح عرض الرسائل الحالي فقط؛ الرسائل ما زالت على الخادم.");return;}
  if(action==="block"){if(!selectedId)return;const blocked=JSON.parse(localStorage.getItem("wasel-blocked-v1")||"[]");const next=blocked.includes(selectedId)?blocked.filter(x=>x!==selectedId):[...blocked,selectedId];localStorage.setItem("wasel-blocked-v1",JSON.stringify(next));status(next.includes(selectedId)?"تم حظر الشخص على هذا الجهاز فقط.":"تم إلغاء الحظر.");return;}
 }
-function openContactProfile(){const p=people.find(x=>x.user_id===selectedId);if(!p)return;const root=$("contactProfile");root.replaceChildren();const avatar=document.createElement("div");avatar.className="avatar profile-avatar";if(p.avatar_data){const img=document.createElement("img");img.src=p.avatar_data;img.alt="";avatar.appendChild(img);}else avatar.textContent=initials(p.display_name);const name=document.createElement("h2");name.textContent=p.display_name||"جهة اتصال";const online=Date.now()-new Date(p.last_seen).getTime()<90000;const state=document.createElement("p");state.textContent=online?"متصل الآن":"آخر ظهور: "+timeLabel(p.last_seen);root.append(avatar,name,state);$("contactBio").textContent=p.user_id===myId?(localStorage.getItem(BIO_KEY)||""):"";$("contactModal").hidden=false;}
+function buildShareUrl(kind,id){
+ const url=new URL(location.href);url.searchParams.delete("refresh");url.searchParams.delete("user");url.searchParams.delete("chat");url.searchParams.set(kind,id);return url.toString();
+}
+async function shareAppLink(kind,id,label){
+ const url=buildShareUrl(kind,id);
+ try{
+  if(navigator.share){await navigator.share({title:"Seif Messages",text:label,url});status("تم فتح نافذة مشاركة الرابط.");}
+  else if(navigator.clipboard&&window.isSecureContext){await navigator.clipboard.writeText(url);status("تم نسخ الرابط الخاص.");}
+  else{window.prompt("انسخ الرابط التالي:",url);}
+ }catch(e){if(e.name!=="AbortError")status("تعذرت مشاركة الرابط تلقائيًا؛ يمكنك نسخه من النافذة.",true);}
+}
+let sharedLinkHandled=false;
+async function handleSharedLink(){
+ if(sharedLinkHandled||!currentName())return;
+ const params=new URLSearchParams(location.search),chatId=params.get("chat"),userId=params.get("user");
+ const target=chatId||userId;if(!target)return;
+ sharedLinkHandled=true;
+ if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(target)){status("رابط Seif Messages غير صالح.",true);return;}
+ const person=people.find(p=>p.user_id===target);
+ if(!person){status("لم نعثر على هذا الحساب. اطلب من صاحبه فتح التطبيق وتحديث ملفه أولًا.",true);return;}
+ if(chatId){await selectPerson(target);status("تم فتح المحادثة من الرابط.");}
+ else{openContactProfile(target);status("تم فتح الملف الشخصي من الرابط.");}
+}
+function openContactProfile(personId=selectedId){
+ const p=people.find(x=>x.user_id===personId);if(!p)return;
+ const root=$("contactProfile");root.replaceChildren();const avatar=document.createElement("div");avatar.className="avatar profile-avatar";
+ if(p.avatar_data){const img=document.createElement("img");img.src=p.avatar_data;img.alt="";avatar.appendChild(img);}else avatar.textContent=initials(p.display_name);
+ const name=document.createElement("h2");name.textContent=p.display_name||"جهة اتصال";
+ const online=Date.now()-new Date(p.last_seen).getTime()<90000;const state=document.createElement("p");state.textContent=online?"متصل الآن":"آخر ظهور: "+timeLabel(p.last_seen);
+ const share=document.createElement("button");share.type="button";share.className="primary-button share-link-button";share.textContent="مشاركة رابط الملف الشخصي";
+ share.addEventListener("click",()=>shareAppLink("user",p.user_id,"افتح ملفي على Seif Messages"));
+ const chatShare=document.createElement("button");chatShare.type="button";chatShare.className="secondary-button share-link-button";chatShare.textContent="مشاركة رابط المحادثة";
+ chatShare.addEventListener("click",()=>shareAppLink("chat",p.user_id,"ابدأ محادثة معي على Seif Messages"));
+ root.append(avatar,name,state,share,chatShare);$("contactBio").textContent=p.user_id===myId?(localStorage.getItem(BIO_KEY)||""):"";$("contactModal").hidden=false;
+}
 function openImageViewer(src){$("imageViewerImage").src=src;$("imageViewer").hidden=false;}
 async function openViewOnceImage(m){if(m.viewed_at||!m.image_data){status("تم فتح هذه الصورة من قبل.");return;}openImageViewer(m.image_data);try{const stamp=new Date().toISOString();await api("wasel_chat_messages?id=eq."+m.id+"&recipient_id=eq."+encodeURIComponent(myId)+"&viewed_at=is.null",{method:"PATCH",headers:{"Prefer":"return=minimal"},body:JSON.stringify({viewed_at:stamp,image_data:null,body:"تم فتح الصورة مرة واحدة"})});m.viewed_at=stamp;m.image_data=null;m.body="تم فتح الصورة مرة واحدة";status("تم فتح الصورة وحذف ملفها من سجل المحادثة.");await loadMessages();}catch(e){closeImageViewer();status("تعذر تسجيل فتح الصورة مرة واحدة. تحقق من تشغيل schema.sql المحدّث.",true);}}
 function applyChatBackground(){
@@ -375,6 +409,7 @@ function applyChatBackground(){
 }
 function closeImageViewer(){$("imageViewer").hidden=true;$("imageViewerImage").removeAttribute("src");}
 function openProfile(){
+ ensureProfileShareButton();
  $("profileNameInput").value=currentName();
  $("profileBioInput").value=localStorage.getItem(BIO_KEY)||"";
  $("profileAvatarPreview").replaceChildren();
@@ -383,6 +418,12 @@ function openProfile(){
  $("soundSetting").checked=localStorage.getItem(SOUND_KEY)!=="off";
  $("notifySetting").checked=localStorage.getItem(NOTIFY_KEY)==="on";
  $("profileError").hidden=true;$("profileModal").hidden=false;
+}
+function ensureProfileShareButton(){
+ const form=$("profileForm");if(!form||$("shareMyProfileLink"))return;
+ const button=document.createElement("button");button.id="shareMyProfileLink";button.type="button";button.className="secondary-button share-link-button";button.textContent="مشاركة رابط حسابي";
+ button.addEventListener("click",()=>shareAppLink("user",myId,"أضفني إلى Seif Messages"));
+ const anchor=form.querySelector(".delete-account-area");if(anchor)form.insertBefore(button,anchor);else form.appendChild(button);
 }
 function applyTheme(theme){const allowed=["blue","purple","green"];const value=allowed.includes(theme)?theme:"blue";document.documentElement.dataset.theme=value;localStorage.setItem(THEME_KEY,value);const picker=$("themeSelect");if(picker&&picker.value!==value)picker.value=value;}
 function applyMode(mode){const value=mode==="dark"?"dark":"light";document.documentElement.dataset.mode=value;localStorage.setItem(MODE_KEY,value);document.documentElement.style.colorScheme=value;const b=$("themeModeToggle");if(b){b.innerHTML=uiIcon(value==="dark"?"sun":"moon")+" "+(value==="dark"?"الوضع الفاتح":"الوضع الداكن");b.setAttribute("aria-pressed",String(value==="dark"));}}
@@ -462,7 +503,7 @@ async function pollIncoming(){
  const undelivered=rows.filter(m=>!m.delivered_at&&m.sender_id!==myId);
  if(undelivered.length){const now=new Date().toISOString();await api("wasel_chat_messages?id=in.("+undelivered.map(m=>m.id).join(",")+")&recipient_id=eq."+encodeURIComponent(myId)+"&delivered_at=is.null",{method:"PATCH",headers:{"Prefer":"return=minimal"},body:JSON.stringify({delivered_at:now})});}
 }
-async function refresh(){if(polling||!currentName())return;polling=true;try{await savePresence();await loadPeople();await pollIncoming();if(selectedId)await loadMessages();}catch(e){status("قاعدة البيانات تحتاج تحديث schema.sql في Supabase. "+e.message,true);}finally{polling=false;}}
+async function refresh(){if(polling||!currentName())return;polling=true;try{await savePresence();await loadPeople();await handleSharedLink();await pollIncoming();if(selectedId)await loadMessages();}catch(e){status("قاعدة البيانات تحتاج تحديث schema.sql في Supabase. "+e.message,true);}finally{polling=false;}}
 $("peopleSearch")?.addEventListener("input",renderPeople);
 $("deleteAccountButton").addEventListener("click",async()=>{
  if(!currentName()){status("لا يوجد حساب نشط لحذفه.",true);return;}
