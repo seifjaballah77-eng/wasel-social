@@ -769,10 +769,10 @@ function showSuspensionScreen(record) {
  const title=document.createElement("h1");title.textContent="تم تعليق حسابك";card.appendChild(title);
  const intro=document.createElement("p");intro.textContent="تم إيقاف الوصول إلى حسابك مؤقتًا. إذا كنت ترى أن هذا القرار صدر بالخطأ، يمكنك شرح المشكلة وإرسال اعتراض للمراجعة.";card.appendChild(intro);
  const reason=document.createElement("div");reason.className="suspension-reason";reason.textContent="سبب التعليق: "+(record.suspension_reason||"مراجعة إدارية");card.appendChild(reason);
- if(record.appeal_text){
+ if(record.appeal_text||record.appeal_submitted){
   const sent=document.createElement("div");sent.className="appeal-sent";
   const strong=document.createElement("strong");strong.textContent="تم استلام اعتراضك";sent.appendChild(strong);
-  const p=document.createElement("p");p.textContent=record.appeal_text;sent.appendChild(p);
+  const p=document.createElement("p");p.textContent=record.appeal_text||"تم إرسال اعتراضك بنجاح. سيقوم المالك بمراجعته.";sent.appendChild(p);
   const small=document.createElement("small");small.textContent="سيبقى الحساب معلّقًا إلى أن يراجع المالك الاعتراض ويقرر رفع التعليق.";sent.appendChild(small);card.appendChild(sent);
  }else{
   const form=document.createElement("form");form.className="appeal-form";
