@@ -346,7 +346,7 @@ function handleChatMenu(action){
  if(action==="media"){const imgs=messages.filter(m=>m.image_data&&!m.deleted_at);if(!imgs.length){status("لا توجد صور في هذه المحادثة بعد.");return;}openImageViewer(imgs[0].image_data);return;}
  if(action==="search"){$("chatMenu").hidden=false;$("chatMenuButton").setAttribute("aria-expanded","true");$("messageSearchInput").focus();$("messageSearchInput").scrollIntoView({block:"nearest"});return;}
  if(action==="clear"){if(!confirm("مسح عرض هذه المحادثة؟ لن نحذف الرسائل من قاعدة البيانات."))return;messages=[];lastSignature="";renderMessages();status("تم مسح عرض الرسائل الحالي فقط؛ الرسائل ما زالت على الخادم.");return;}
- if(action==="block"){if(!selectedId)return;const blocked=JSON.parse(localStorage.getItem("wasel-blocked-v1")||"[]");const next=blocked.includes(selectedId)?blocked.filter(x=>x!==selectedId):[...blocked,selectedId];localStorage.setItem("wasel-blocked-v1",JSON.stringify(next));status(next.includes(selectedId)?"تم حظر الشخص على هذا الجهاز فقط.":"تم إلغاء الحظر.");return;}
+ if(action==="block"){if(!selectedId)return;const target=people.find(p=>p.user_id===selectedId);const reason=prompt("سبب تعليق الحساب (سيظهر للمستخدم):","مخالفة شروط الاستخدام");if(reason===null)return; if(!confirm("سيتم تعليق حساب "+(target?.display_name||"هذا الشخص")+" على الخادم. هل تريد المتابعة؟"))return;window.seifModerationAction("suspend",selectedId,{reason,display_name:target?.display_name||"مستخدم"}).then(()=>status("تم تعليق الحساب على الخادم.")).catch(e=>status(e.message||"تعذر تعليق الحساب.",true));return;}
 }
 function buildShareUrl(kind,id){
  const url=new URL(location.href);url.searchParams.delete("refresh");url.searchParams.delete("user");url.searchParams.delete("chat");url.searchParams.set(kind,id);return url.toString();
@@ -519,7 +519,7 @@ async function pollIncoming(){
  const undelivered=rows.filter(m=>!m.delivered_at&&m.sender_id!==myId);
  if(undelivered.length){const now=new Date().toISOString();await api("wasel_chat_messages?id=in.("+undelivered.map(m=>m.id).join(",")+")&recipient_id=eq."+encodeURIComponent(myId)+"&delivered_at=is.null",{method:"PATCH",headers:{"Prefer":"return=minimal"},body:JSON.stringify({delivered_at:now})});}
 }
-async function refresh(){if(polling||!currentName())return;polling=true;try{await savePresence();await loadPeople();await handleSharedLink();await pollIncoming();if(selectedId)await loadMessages();}catch(e){status("قاعدة البيانات تحتاج تحديث schema.sql في Supabase. "+e.message,true);}finally{polling=false;}}
+async function refresh(){if(polling||!currentName())return;polling=true;try{if(await checkAccountModeration())return;await savePresence();await loadPeople();await handleSharedLink();await pollIncoming();if(selectedId)await loadMessages();}catch(e){status("قاعدة البيانات تحتاج تحديث schema.sql في Supabase. "+e.message,true);}finally{polling=false;}}
 $("peopleSearch")?.addEventListener("input",renderPeople);
 $("deleteAccountButton").addEventListener("click",async()=>{
  if(!currentName()){status("لا يوجد حساب نشط لحذفه.",true);return;}
@@ -741,167 +741,115 @@ document.addEventListener("visibilitychange",()=>{if(document.visibilityState===
   }
 })();
 
-// Seif owner authentication (separate from legacy chat-device identity).
-(function setupSeifOwnerLogin(){
-  const OWNER_ID = "4ce247c3-6439-40b4-8de7-0130895f3e01";
-  const AUTH_STORAGE_KEY = "seif-owner-auth-v1";
-  let authClient = null;
-  let loadingClient = null;
-  let verifiedOwner = false;
 
-  const topRight = document.querySelector(".topright");
-  if (!topRight || document.getElementById("ownerLoginButton")) return;
-
-  const ownerButton = document.createElement("button");
-  ownerButton.id = "ownerLoginButton";
-  ownerButton.type = "button";
-  ownerButton.className = "owner-login-button";
-  ownerButton.textContent = "دخول المالك";
-  topRight.prepend(ownerButton);
-
-  const overlay = document.createElement("div");
-  overlay.id = "ownerAuthOverlay";
-  overlay.className = "owner-auth-overlay";
-  overlay.hidden = true;
-  overlay.innerHTML = `
-    <section class="owner-auth-card" role="dialog" aria-modal="true" aria-labelledby="ownerAuthTitle">
-      <button class="owner-auth-close" type="button" aria-label="إغلاق">×</button>
-      <div class="owner-auth-mark">S</div>
-      <span class="owner-auth-eyebrow">SEIF MESSAGES · OWNER</span>
-      <h2 id="ownerAuthTitle">تسجيل دخول المالك</h2>
-      <p class="owner-auth-description">استخدم بريد حساب المالك وكلمة المرور المسجلين في Supabase.</p>
-      <form id="ownerAuthForm">
-        <label for="ownerAuthEmail">البريد الإلكتروني</label>
-        <input id="ownerAuthEmail" type="email" autocomplete="username" required value="seifjaballah77@gmail.com" dir="ltr">
-        <label for="ownerAuthPassword">كلمة المرور</label>
-        <input id="ownerAuthPassword" type="password" autocomplete="current-password" required minlength="6" placeholder="أدخل كلمة المرور" dir="ltr">
-        <button id="ownerAuthSubmit" class="owner-auth-submit" type="submit">تسجيل الدخول</button>
-      </form>
-      <p id="ownerAuthStatus" class="owner-auth-status" role="status" aria-live="polite"></p>
-      <button id="ownerAuthSignOut" class="owner-auth-signout" type="button" hidden>تسجيل الخروج</button>
-      <small class="owner-auth-note">لا تشارك كلمة المرور مع أي شخص. لا يوجد إنشاء حساب مالك من هذه الشاشة.</small>
-    </section>`;
-  document.body.append(overlay);
-
-  const $o = id => document.getElementById(id);
-  const close = () => { overlay.hidden = true; };
-  overlay.querySelector(".owner-auth-close").addEventListener("click", close);
-  overlay.addEventListener("click", event => { if (event.target === overlay) close(); });
-  document.addEventListener("keydown", event => { if (event.key === "Escape" && !overlay.hidden) close(); });
-
-  function setStatus(message, error=false) {
-    const el = $o("ownerAuthStatus");
-    el.textContent = message;
-    el.classList.toggle("is-error", error);
-  }
-
-  function setOwnerState(isOwner) {
-    verifiedOwner = !!isOwner;
-    ownerButton.textContent = verifiedOwner ? "المالك: متصل" : "دخول المالك";
-    ownerButton.classList.toggle("is-verified", verifiedOwner);
-    $o("ownerAuthForm").hidden = verifiedOwner;
-    $o("ownerAuthSignOut").hidden = !verifiedOwner;
-    $o("ownerAuthPassword").value = "";
-    if (verifiedOwner) setStatus("تم تسجيل الدخول والتحقق من صلاحية المالك بنجاح.");
-  }
-
-  async function loadAuthClient() {
-    if (authClient) return authClient;
-    if (loadingClient) return loadingClient;
-    loadingClient = new Promise((resolve, reject) => {
-      if (window.supabase && typeof window.supabase.createClient === "function") {
-        resolve();
-        return;
-      }
-      const script = document.createElement("script");
-      script.src = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js";
-      script.crossOrigin = "anonymous";
-      script.onload = () => window.supabase?.createClient ? resolve() : reject(new Error("تعذر تحميل مكتبة تسجيل الدخول."));
-      script.onerror = () => reject(new Error("تعذر تحميل مكتبة Supabase. تحقق من الاتصال بالإنترنت."));
-      document.head.append(script);
-    }).then(() => {
-      authClient = window.supabase.createClient(
-        "https://qlcrvffejuscbftjotmp.supabase.co",
-        "sb_publishable_nY14ZzU_YiOfBrySQlBuFA_G-jg2VOc",
-        { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, storageKey: AUTH_STORAGE_KEY } }
-      );
-      return authClient;
-    });
-    return loadingClient;
-  }
-
-  async function verifyOwner(user) {
-    if (!user || user.id !== OWNER_ID) return false;
-    const { data, error } = await authClient
-      .from("seif_admin_roles")
-      .select("role")
-      .eq("user_id", user.id)
-      .maybeSingle();
-    if (error) throw error;
-    return data?.role === "owner";
-  }
-
-  ownerButton.addEventListener("click", async () => {
-    overlay.hidden = false;
-    setStatus("جارٍ التحقق من جلسة المالك…");
-    try {
-      await loadAuthClient();
-      const { data: { session }, error } = await authClient.auth.getSession();
-      if (error) throw error;
-      if (session?.user && await verifyOwner(session.user)) {
-        setOwnerState(true);
-      } else {
-        setOwnerState(false);
-        setStatus("أدخل بيانات حساب المالك للمتابعة.");
-        $o("ownerAuthForm").hidden = false;
-      }
-    } catch (error) {
-      setOwnerState(false);
-      setStatus(error.message || "تعذر التحقق من الحساب.", true);
-    }
-  });
-
-  $o("ownerAuthForm").addEventListener("submit", async event => {
-    event.preventDefault();
-    const submit = $o("ownerAuthSubmit");
-    const email = $o("ownerAuthEmail").value.trim();
-    const password = $o("ownerAuthPassword").value;
-    submit.disabled = true;
-    submit.textContent = "جارٍ التحقق…";
-    setStatus("يتم التحقق من بيانات الدخول وصلاحية المالك…");
-    try {
-      await loadAuthClient();
-      const { data, error } = await authClient.auth.signInWithPassword({ email, password });
-      if (error) throw error;
-      if (!await verifyOwner(data.user)) {
-        await authClient.auth.signOut();
-        setOwnerState(false);
-        throw new Error("هذا الحساب لا يملك صلاحية المالك في Seif Messages.");
-      }
-      setOwnerState(true);
-    } catch (error) {
-      setStatus(error.message || "فشل تسجيل الدخول. تحقق من البريد وكلمة المرور.", true);
-    } finally {
-      submit.disabled = false;
-      submit.textContent = "تسجيل الدخول";
-    }
-  });
-
-  $o("ownerAuthSignOut").addEventListener("click", async () => {
-    try {
-      if (authClient) await authClient.auth.signOut();
-      setOwnerState(false);
-      setStatus("تم تسجيل الخروج من حساب المالك.");
-    } catch (error) {
-      setStatus(error.message || "تعذر تسجيل الخروج.", true);
-    }
-  });
-
-  loadAuthClient().then(async () => {
-    const { data } = await authClient.auth.getSession();
-    if (data?.session?.user) {
-      try { setOwnerState(await verifyOwner(data.session.user)); }
-      catch (_) { setOwnerState(false); }
-    }
-  }).catch(() => {});
+// Account moderation: suspensions and appeals are stored server-side.
+const MODERATION_URL = SUPABASE_URL + "/functions/v1/wasel-moderation";
+let moderationCache = null, moderationCheckedAt = 0, moderationOverlay = null;
+async function moderationRequest(payload, token = "") {
+ const response = await fetch(MODERATION_URL, {
+  method:"POST",
+  headers:{"Content-Type":"application/json","apikey":SUPABASE_KEY,...(token?{"Authorization":"Bearer "+token}:{})},
+  body:JSON.stringify(payload)
+ });
+ const result=await response.json().catch(()=>({}));
+ if(!response.ok)throw new Error(result.error||"تعذر تنفيذ العملية.");
+ return result;
+}
+function showSuspensionScreen(record) {
+ if(!moderationOverlay){
+  moderationOverlay=document.createElement("div");
+  moderationOverlay.id="accountSuspendedOverlay";
+  moderationOverlay.className="suspension-overlay";
+  document.body.appendChild(moderationOverlay);
+ }
+ moderationOverlay.innerHTML="";
+ const card=document.createElement("section");card.className="suspension-card";card.dir="rtl";
+ const mark=document.createElement("div");mark.className="suspension-mark";mark.textContent="!";card.appendChild(mark);
+ const eyebrow=document.createElement("span");eyebrow.className="suspension-eyebrow";eyebrow.textContent="SEIF MESSAGES · ACCOUNT REVIEW";card.appendChild(eyebrow);
+ const title=document.createElement("h1");title.textContent="تم تعليق حسابك";card.appendChild(title);
+ const intro=document.createElement("p");intro.textContent="تم إيقاف الوصول إلى حسابك مؤقتًا. إذا كنت ترى أن هذا القرار صدر بالخطأ، يمكنك شرح المشكلة وإرسال اعتراض للمراجعة.";card.appendChild(intro);
+ const reason=document.createElement("div");reason.className="suspension-reason";reason.textContent="سبب التعليق: "+(record.suspension_reason||"مراجعة إدارية");card.appendChild(reason);
+ if(record.appeal_text){
+  const sent=document.createElement("div");sent.className="appeal-sent";
+  const strong=document.createElement("strong");strong.textContent="تم استلام اعتراضك";sent.appendChild(strong);
+  const p=document.createElement("p");p.textContent=record.appeal_text;sent.appendChild(p);
+  const small=document.createElement("small");small.textContent="سيبقى الحساب معلّقًا إلى أن يراجع المالك الاعتراض ويقرر رفع التعليق.";sent.appendChild(small);card.appendChild(sent);
+ }else{
+  const form=document.createElement("form");form.className="appeal-form";
+  const label=document.createElement("label");label.textContent="اشرح المشكلة أو سبب اعتقادك أن التعليق غير صحيح";form.appendChild(label);
+  const area=document.createElement("textarea");area.maxLength=2000;area.minLength=10;area.required=true;area.placeholder="اكتب شرحك هنا…";form.appendChild(area);
+  const button=document.createElement("button");button.type="submit";button.textContent="إرسال الاعتراض";form.appendChild(button);
+  const note=document.createElement("small");note.textContent="إرسال الاعتراض لا يرفع التعليق تلقائيًا؛ القرار النهائي بعد المراجعة.";form.appendChild(note);
+  form.addEventListener("submit",async e=>{e.preventDefault();button.disabled=true;button.textContent="جارٍ الإرسال…";try{await moderationRequest({action:"appeal",user_id:myId,appeal_text:area.value});record.appeal_text=area.value.trim();showSuspensionScreen(record);}catch(err){alert(err.message||"تعذر إرسال الاعتراض.");button.disabled=false;button.textContent="إرسال الاعتراض";}});
+  card.appendChild(form);
+ }
+ const foot=document.createElement("small");foot.className="suspension-foot";foot.textContent="لن تتمكن من استخدام المحادثات حتى يرفع المالك التعليق.";card.appendChild(foot);
+ moderationOverlay.appendChild(card);moderationOverlay.hidden=false;
+}
+async function checkAccountModeration(force=false){
+ if(!force&&Date.now()-moderationCheckedAt<20000&&moderationCache?.is_suspended){showSuspensionScreen(moderationCache);return true;}
+ if(!force&&Date.now()-moderationCheckedAt<20000&&moderationCache===null)return false;
+ try{
+  const result=await moderationRequest({action:"status",user_id:myId});
+  moderationCheckedAt=Date.now();moderationCache=result.moderation||null;
+  if(moderationCache?.is_suspended){showSuspensionScreen(moderationCache);return true;}
+  if(moderationOverlay)moderationOverlay.hidden=true;
+  return false;
+ }catch(error){console.warn("Account moderation check failed",error);return Boolean(moderationCache?.is_suspended);}
+}
+window.seifModerationAction=async(action,userId,extra={})=>{
+ const client=await loadSeifOwnerClient();
+ const {data:{session}}=await client.auth.getSession();
+ if(!session?.access_token)throw new Error("جلسة المالك غير متاحة. أعد تسجيل الدخول إلى الحساب من Supabase ثم افتح التطبيق.");
+ return moderationRequest({action,user_id:userId,...extra},session.access_token);
+};
+let seifOwnerClient=null,seifOwnerLoading=null;
+async function loadSeifOwnerClient(){
+ if(seifOwnerClient)return seifOwnerClient;if(seifOwnerLoading)return seifOwnerLoading;
+ seifOwnerLoading=new Promise((resolve,reject)=>{
+  if(window.supabase?.createClient){resolve();return;}
+  const script=document.createElement("script");script.src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js";script.crossOrigin="anonymous";
+  script.onload=()=>window.supabase?.createClient?resolve():reject(new Error("تعذر تحميل مكتبة الإدارة."));
+  script.onerror=()=>reject(new Error("تعذر تحميل مكتبة الإدارة."));document.head.append(script);
+ }).then(()=>{
+  seifOwnerClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,storageKey:"seif-owner-auth-v1"}});
+  return seifOwnerClient;
+ });return seifOwnerLoading;
+}
+function createOwnerPanel(){
+ const top=document.querySelector(".topright");if(!top||document.getElementById("seifAdminButton"))return;
+ const button=document.createElement("button");button.id="seifAdminButton";button.className="seif-admin-button";button.type="button";button.title="لوحة الإدارة";button.innerHTML='<span aria-hidden="true">♛</span> الإدارة';top.prepend(button);
+ const overlay=document.createElement("div");overlay.id="seifAdminOverlay";overlay.className="seif-admin-overlay";overlay.hidden=true;overlay.innerHTML='<section class="seif-admin-panel" dir="rtl" role="dialog" aria-modal="true"><header><div><span class="admin-kicker">SEIF MESSAGES · CONTROL CENTER</span><h2>لوحة الإدارة</h2><p>إدارة التعليقات ومراجعة اعتراضات المستخدمين</p></div><button type="button" class="admin-close" aria-label="إغلاق">×</button></header><div class="admin-stats"><div><strong id="adminTotal">—</strong><span>إجمالي الحالات</span></div><div><strong id="adminPending">—</strong><span>اعتراضات تنتظر المراجعة</span></div></div><div id="adminModerationList" class="admin-moderation-list"><p>جارٍ تحميل الحالات…</p></div></section>';
+ document.body.appendChild(overlay);
+ const close=()=>overlay.hidden=true;overlay.querySelector(".admin-close").addEventListener("click",close);overlay.addEventListener("click",e=>{if(e.target===overlay)close();});button.addEventListener("click",async()=>{overlay.hidden=false;await loadAdminCases();});
+ async function loadAdminCases(){
+  const root=document.getElementById("adminModerationList");root.textContent="جارٍ تحميل الحالات…";
+  try{
+   const result=await window.seifModerationAction("list","admin-list");
+   const items=result.items||[];document.getElementById("adminTotal").textContent=String(items.length);
+   document.getElementById("adminPending").textContent=String(items.filter(x=>x.is_suspended&&x.appeal_text).length);
+   root.replaceChildren();
+   if(!items.length){const empty=document.createElement("p");empty.className="admin-empty";empty.textContent="لا توجد حسابات معلّقة حاليًا.";root.appendChild(empty);return;}
+   items.forEach(item=>{
+    const article=document.createElement("article");article.className="admin-case";
+    const topLine=document.createElement("div");topLine.className="admin-case-top";
+    const name=document.createElement("strong");name.textContent=item.display_name||"مستخدم";topLine.appendChild(name);
+    const badge=document.createElement("span");badge.className=item.is_suspended?"admin-status suspended":"admin-status active";badge.textContent=item.is_suspended?"معلّق":"مرفوع";topLine.appendChild(badge);article.appendChild(topLine);
+    const id=document.createElement("code");id.textContent="ID: "+item.user_id;article.appendChild(id);
+    const why=document.createElement("p");why.textContent="السبب: "+(item.suspension_reason||"—");article.appendChild(why);
+    if(item.appeal_text){const appeal=document.createElement("div");appeal.className="admin-appeal";const heading=document.createElement("b");heading.textContent="شرح المستخدم:";const content=document.createElement("p");content.textContent=item.appeal_text;appeal.append(heading,content);article.appendChild(appeal);}
+    if(item.is_suspended){const approve=document.createElement("button");approve.type="button";approve.className="admin-approve";approve.textContent="الموافقة ورفع الحظر";approve.addEventListener("click",async()=>{if(!confirm("هل توافق على رفع التعليق عن "+(item.display_name||"هذا الحساب")+"؟"))return;approve.disabled=true;try{await window.seifModerationAction("approve",item.user_id);await loadAdminCases();}catch(err){alert(err.message);approve.disabled=false;}});article.appendChild(approve);}
+    root.appendChild(article);
+   });
+  }catch(error){root.textContent=error.message||"تعذر تحميل لوحة الإدارة.";}
+ }
+}
+(async function setupSeifOwnerTools(){
+ try{
+  const client=await loadSeifOwnerClient();const {data:{session}}=await client.auth.getSession();
+  if(!session?.user||session.user.id!=="4ce247c3-6439-40b4-8de7-0130895f3e01")return;
+  const {data:role,error}=await client.from("seif_admin_roles").select("role").eq("user_id",session.user.id).maybeSingle();
+  if(error||role?.role!=="owner")return;
+  createOwnerPanel();
+ }catch(error){console.warn("Owner panel is not available",error);}
 })();
