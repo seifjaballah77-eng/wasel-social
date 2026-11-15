@@ -139,7 +139,7 @@ async function startCall(kind,isIncoming=false,sharedRoomName=null){
  try{
   await loadJitsiScript();
   if(overlay.hidden||!activeCallInfo)return;
-  activeCallApi=new window.JitsiMeetExternalAPI("meet.jit.si",{roomName,width:"100%",height:"100%",parentNode:mount,lang:"ar",userInfo:{displayName:currentName()||"مستخدم"},configOverwrite:{startWithAudioMuted:false,startWithVideoMuted:kind==="audio",prejoinConfig:{enabled:false},disableDeepLinking:true,p2p:{enabled:true},audioQuality:{stereo:false,opusMaxAverageBitrate:24000,enableOpusDtx:true}},interfaceConfigOverwrite:{TOOLBAR_BUTTONS:kind==="audio"?["microphone"]:["microphone","camera"],SHOW_JITSI_WATERMARK:false,SHOW_WATERMARK_FOR_GUESTS:false}});
+  activeCallApi=new window.JitsiMeetExternalAPI("meet.jit.si",{roomName,width:"100%",height:"100%",parentNode:mount,lang:"ar",userInfo:{displayName:currentName()||"مستخدم"},configOverwrite:{startWithAudioMuted:false,startWithVideoMuted:kind==="audio",prejoinConfig:{enabled:false},disableDeepLinking:true,p2p:{enabled:true},audioQuality:{stereo:false,opusMaxAverageBitrate:24000,enableOpusDtx:true}},interfaceConfigOverwrite:{TOOLBAR_BUTTONS:kind==="audio"?["microphone","desktop"]:["microphone","camera","desktop"],SHOW_JITSI_WATERMARK:false,SHOW_WATERMARK_FOR_GUESTS:false}});
   activeCallApi.addListener("videoConferenceJoined",()=>{if(activeCallInfo)activeCallInfo.joinedAt=Date.now();status("أنت داخل المكالمة.");$("callModalNote").textContent="مدة المكالمة "+formatCallDuration(0);clearInterval(callClockTimer);callClockTimer=setInterval(()=>{if(activeCallInfo&&activeCallInfo.joinedAt)$("callModalNote").textContent="مدة المكالمة "+formatCallDuration(Math.floor((Date.now()-activeCallInfo.joinedAt)/1000));},1000);});
   activeCallApi.addListener("participantJoined",()=>{if(activeCallInfo)activeCallInfo.peerJoined=true;$("callModalNote").textContent="انضم صديقك إلى المكالمة.";status("انضم الطرف الآخر إلى المكالمة.");});
   activeCallApi.addListener("participantLeft",()=>{$("callModalNote").textContent="غادر أحد المشاركين المكالمة.";});
@@ -827,6 +827,7 @@ function installFloatingActions(){
   ["attach","paperclip","إرسال مرفق"],
   ["audio","phone","مكالمة صوتية"],
   ["video","video","مكالمة فيديو"],
+  ["share","video","مشاركة الشاشة"],
   ["history","status","سجل المكالمات"],
   ["profile","edit","إعدادات الحساب"],
   ["theme","chevron","تبديل الوضع"]
@@ -839,6 +840,7 @@ function installFloatingActions(){
   case "attach":$("attachmentToggle")?.click();break;
   case "audio":$("voiceCall")?.click();break;
   case "video":$("videoCall")?.click();break;
+  case "share":if(activeCallApi){activeCallApi.executeCommand("toggleShareScreen");}else{status("ابدأ مكالمة أولًا ثم استخدم مشاركة الشاشة.",true);}break;
   case "history":openCallsHistory();break;
   case "profile":openProfile();break;
   case "theme":applyMode(document.documentElement.dataset.mode==="dark"?"light":"dark");break;
