@@ -27,7 +27,7 @@ async function loadPublicAppSettings(){
 function status(text,error=false){$("callStatus").textContent=text;$("callStatus").className="statusline"+(error?" error":"");}
 function currentName(){return localStorage.getItem(PROFILE_KEY)||"";}
 function isSeifOwnerView(){return window.seifIsOwner===true;}
-function canContact(id){if(!isSeifOwnerView()&&id!==SEIF_ARABIC_ID)return false;return !((myId===DOTS_ACCOUNT_ID&&id===ROUA_ID)||(myId===ROUA_ID&&id===DOTS_ACCOUNT_ID));}
+function canContact(id){return !((myId===DOTS_ACCOUNT_ID&&id===ROUA_ID)||(myId===ROUA_ID&&id===DOTS_ACCOUNT_ID));}
 function addSeifCrown(parent){
  const crown=document.createElement("span");crown.className="seif-owner-crown";crown.textContent="♛";crown.title="الحساب الرسمي لسيف";crown.setAttribute("aria-label","الحساب الرسمي لسيف");parent.appendChild(crown);return crown;
 }
@@ -270,7 +270,7 @@ async function savePresence(){
  await api("wasel_chat_people?on_conflict=user_id",{method:"POST",headers:{"Prefer":"resolution=merge-duplicates,return=minimal"},body:JSON.stringify(presence)});
 }
 async function loadPeople(){
- people=await api("wasel_chat_people?select=user_id,display_name,last_seen,room_id,avatar_data,is_typing,typing_to,is_verified&room_id=eq."+ROOM+"&order=last_seen.desc&limit=300");if(!isSeifOwnerView())people=people.filter(p=>p.user_id===SEIF_ARABIC_ID);if(myId===DOTS_ACCOUNT_ID||myId===ROUA_ID)people=people.filter(p=>!((myId===DOTS_ACCOUNT_ID&&p.user_id===ROUA_ID)||(myId===ROUA_ID&&p.user_id===DOTS_ACCOUNT_ID)));
+ people=await api("wasel_chat_people?select=user_id,display_name,last_seen,room_id,avatar_data,is_typing,typing_to,is_verified&room_id=eq."+ROOM+"&order=last_seen.desc&limit=300");if(myId===DOTS_ACCOUNT_ID||myId===ROUA_ID)people=people.filter(p=>!((myId===DOTS_ACCOUNT_ID&&p.user_id===ROUA_ID)||(myId===ROUA_ID&&p.user_id===DOTS_ACCOUNT_ID)));
  try{const recent=await api("wasel_chat_messages?select=id,sender_id,recipient_id,body,image_data,created_at,read_at,delivered_at,deleted_at,room_id&room_id=eq."+ROOM+"&order=created_at.desc&limit=1000");lastMessagesByUser={};for(const m of recent){const other=m.sender_id===myId?m.recipient_id:m.sender_id;if(!other||other===myId||lastMessagesByUser[other])continue;lastMessagesByUser[other]=m;}}catch(e){console.warn("Last-message previews unavailable",e);lastMessagesByUser={};}
  const unread=await api("wasel_chat_messages?select=id,sender_id&recipient_id=eq."+encodeURIComponent(myId)+"&read_at=is.null&deleted_at=is.null&room_id=eq."+ROOM+"&limit=1000");
  unreadCounts={};for(const m of unread)unreadCounts[m.sender_id]=(unreadCounts[m.sender_id]||0)+1;
