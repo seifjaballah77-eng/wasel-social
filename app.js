@@ -10,6 +10,8 @@ let myId = localStorage.getItem(ID_KEY) || crypto.randomUUID();
 localStorage.setItem(ID_KEY,myId);
 let lastMessagesByUser={},people=[],selectedId=localStorage.getItem(SELECTED_KEY)||null,messages=[],unreadCounts={},lastSignature="",polling=false,replyTo=null,typingTimer=null,lastIncomingId=0,notifiedIds=new Set(),messageSearchTerm="";
 const headers={"apikey":SUPABASE_KEY,"Authorization":"Bearer "+SUPABASE_KEY,"Content-Type":"application/json"};
+const MODERATION_URL = SUPABASE_URL + "/functions/v1/wasel-moderation";
+let moderationCache = null, moderationCheckedAt = 0, moderationOverlay = null;
 function status(text,error=false){$("callStatus").textContent=text;$("callStatus").className="statusline"+(error?" error":"");}
 function currentName(){return localStorage.getItem(PROFILE_KEY)||"";}
 function canContact(id){return !((myId===DOTS_ACCOUNT_ID&&id===ROUA_ID)||(myId===ROUA_ID&&id===DOTS_ACCOUNT_ID));}
@@ -743,8 +745,6 @@ document.addEventListener("visibilitychange",()=>{if(document.visibilityState===
 
 
 // Account moderation: suspensions and appeals are stored server-side.
-const MODERATION_URL = SUPABASE_URL + "/functions/v1/wasel-moderation";
-let moderationCache = null, moderationCheckedAt = 0, moderationOverlay = null;
 async function moderationRequest(payload, token = "") {
  const response = await fetch(MODERATION_URL, {
   method:"POST",
