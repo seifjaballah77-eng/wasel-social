@@ -990,7 +990,7 @@ body.mobile-chat-open .topbar .profile-open {
 @media(max-width:620px){.seif-admin-button{min-height:31px;padding:5px 8px;font-size:10px}.seif-admin-panel{padding:18px 14px}.suspension-card{padding:22px 17px}}
 
 /* Floating quick actions and owner-only appearance controls */
-.seif-floating-actions{position:fixed;z-index:1800;right:22px;bottom:24px;display:flex;flex-direction:column;align-items:flex-end;gap:10px;direction:rtl}
+.seif-floating-actions{position:fixed;z-index:1800;right:22px;bottom:96px;display:flex;flex-direction:column;align-items:flex-end;gap:10px;direction:rtl}
 .seif-floating-toggle{width:58px;height:58px;border:1px solid var(--neon-line);border-radius:50%;display:grid;place-items:center;background:linear-gradient(145deg,#167d91,#103c55);color:#fff;box-shadow:0 10px 28px #0007,0 0 22px #10c7dc33;cursor:pointer}
 .seif-floating-toggle .ui-icon{width:25px;height:25px}
 .seif-floating-menu{display:flex;flex-direction:column;align-items:flex-end;gap:8px}
@@ -1000,3 +1000,21 @@ body.mobile-chat-open .topbar .profile-open {
 .seif-floating-action:hover,.seif-floating-toggle:hover{filter:brightness(1.15);transform:translateY(-1px)}
 .admin-gold-toggle{display:block;width:100%;margin:0 0 16px;padding:12px 14px;border:1px solid #b88b39;border-radius:12px;background:#171b24;color:#f0d18b;font:inherit;font-weight:800;cursor:pointer}
 @media(max-width:620px){.seif-floating-actions{right:14px;bottom:78px}.seif-floating-toggle{width:54px;height:54px}.seif-floating-action{min-height:40px}}
+
+/* Suspension notice stays neutral; only the owner's registered device loads owner-gold.css */
+.suspension-overlay{background:rgba(4,9,18,.86)}
+.suspension-card{border-color:var(--neon-line,#247b9b);background:linear-gradient(145deg,#142338,#0b1421);color:#edf6fb}
+.suspension-mark{border-color:#347e9d;background:#132c40;color:#8bd8ef}
+.suspension-card h1,.suspension-eyebrow{color:#8bd8ef}
+.suspension-card>p{color:#c2d2dc}
+.suspension-reason{border-color:#31576b;background:#102536;color:#d6f3fb}
+.appeal-form label{color:#c9e3ee}
+.appeal-form textarea{border-color:#31576b;background:#0b1722;color:#f1f8fb}
+.appeal-form button{border-color:#347e9d;background:linear-gradient(135deg,#8bd8ef,#267b9e);color:#06121a}
+.appeal-form small,.suspension-foot{color:#91aebb}
+.appeal-sent{border-color:#31576b;background:#102536}
+.appeal-sent strong{color:#8bd8ef}
+.appeal-sent p{color:#e3f4f9}
+.appeal-sent small{color:#91aebb}
+.admin-gold-note{display:block;margin:-8px 0 14px;color:#aab6c1;font-size:11px;line-height:1.7}
+.admin-gold-toggle:disabled{opacity:.6;cursor:wait}
