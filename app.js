@@ -26,7 +26,12 @@ async function loadPublicAppSettings(){
 }
 function status(text,error=false){$("callStatus").textContent=text;$("callStatus").className="statusline"+(error?" error":"");}
 function currentName(){return localStorage.getItem(PROFILE_KEY)||"";}
-function canContact(id){return !((myId===DOTS_ACCOUNT_ID&&id===ROUA_ID)||(myId===ROUA_ID&&id===DOTS_ACCOUNT_ID));}
+function isSeifOwnerView(){return window.seifIsOwner===true||myId===SEIF_ARABIC_ID;}
+function canContact(id){if(!isSeifOwnerView()&&id!==SEIF_ARABIC_ID)return false;return !((myId===DOTS_ACCOUNT_ID&&id===ROUA_ID)||(myId===ROUA_ID&&id===DOTS_ACCOUNT_ID));}
+function addSeifCrown(parent){
+ const crown=document.createElement("span");crown.className="seif-owner-crown";crown.textContent="♛";crown.title="الحساب الرسمي لسيف";crown.setAttribute("aria-label","الحساب الرسمي لسيف");parent.appendChild(crown);return crown;
+}
+(function installSeifOwnerStyle(){if(document.getElementById("seifOwnerNameStyle"))return;const style=document.createElement("style");style.id="seifOwnerNameStyle";style.textContent=".seif-owner-name{color:#e5b93f!important;text-shadow:0 0 8px rgba(229,185,63,.35)}.seif-owner-crown{display:inline-flex;align-items:center;justify-content:center;margin-inline-start:5px;color:#f3c64e;font-size:1.05em;text-shadow:0 0 9px rgba(243,198,78,.65);vertical-align:middle}.seif-owner-person{border-color:rgba(229,185,63,.45)!important;box-shadow:inset 0 0 0 1px rgba(229,185,63,.08)}";document.head.appendChild(style);})();
 function contactRestrictionNotice(){status("تم حظر التواصل بين هذا الحساب وحساب roua في هذه الواجهة. يلزم أيضًا تفعيل قيد قاعدة البيانات.",true);}
 function currentPhoto(){return localStorage.getItem(PHOTO_KEY)||"";}
 function initials(name){return (name||"").trim().charAt(0)||"؟";}
@@ -265,7 +270,7 @@ async function savePresence(){
  await api("wasel_chat_people?on_conflict=user_id",{method:"POST",headers:{"Prefer":"resolution=merge-duplicates,return=minimal"},body:JSON.stringify(presence)});
 }
 async function loadPeople(){
- people=await api("wasel_chat_people?select=user_id,display_name,last_seen,room_id,avatar_data,is_typing,typing_to,is_verified&room_id=eq."+ROOM+"&order=last_seen.desc&limit=300");if(myId===DOTS_ACCOUNT_ID||myId===ROUA_ID)people=people.filter(p=>!((myId===DOTS_ACCOUNT_ID&&p.user_id===ROUA_ID)||(myId===ROUA_ID&&p.user_id===DOTS_ACCOUNT_ID)));
+ people=await api("wasel_chat_people?select=user_id,display_name,last_seen,room_id,avatar_data,is_typing,typing_to,is_verified&room_id=eq."+ROOM+"&order=last_seen.desc&limit=300");if(!isSeifOwnerView())people=people.filter(p=>p.user_id===SEIF_ARABIC_ID);if(myId===DOTS_ACCOUNT_ID||myId===ROUA_ID)people=people.filter(p=>!((myId===DOTS_ACCOUNT_ID&&p.user_id===ROUA_ID)||(myId===ROUA_ID&&p.user_id===DOTS_ACCOUNT_ID)));
  try{const recent=await api("wasel_chat_messages?select=id,sender_id,recipient_id,body,image_data,created_at,read_at,delivered_at,deleted_at,room_id&room_id=eq."+ROOM+"&order=created_at.desc&limit=1000");lastMessagesByUser={};for(const m of recent){const other=m.sender_id===myId?m.recipient_id:m.sender_id;if(!other||other===myId||lastMessagesByUser[other])continue;lastMessagesByUser[other]=m;}}catch(e){console.warn("Last-message previews unavailable",e);lastMessagesByUser={};}
  const unread=await api("wasel_chat_messages?select=id,sender_id&recipient_id=eq."+encodeURIComponent(myId)+"&read_at=is.null&deleted_at=is.null&room_id=eq."+ROOM+"&limit=1000");
  unreadCounts={};for(const m of unread)unreadCounts[m.sender_id]=(unreadCounts[m.sender_id]||0)+1;
@@ -276,10 +281,10 @@ function renderPeople(){
  const matches=people.filter(p=>(p.display_name||"").toLocaleLowerCase().includes(query)&&(!onlyFavorites||favorites.includes(p.user_id)));$("peopleCount").textContent=String(matches.length);
  if(!matches.length){const e=document.createElement("div");e.className="empty";e.textContent=query?"لا يوجد شخص بهذا الاسم. تأكد أن صديقك فتح الموقع وكتب اسمه.":"لا يوجد أشخاص بعد. افتح الموقع واكتب اسمك.";root.appendChild(e);}
  for(const p of matches){
-  const online=now-new Date(p.last_seen).getTime()<90000,b=document.createElement("button");b.type="button";b.className="person"+(p.user_id===selectedId?" active":"");
+  const isSeif=p.user_id===SEIF_ARABIC_ID;const online=now-new Date(p.last_seen).getTime()<90000,b=document.createElement("button");b.type="button";b.className="person"+(p.user_id===selectedId?" active":"")+(isSeif?" seif-owner-person":"");
   const av=document.createElement("span");av.className="avatar";if(p.avatar_data){const img=document.createElement("img");img.src=p.avatar_data;img.alt="";av.appendChild(img);}else av.textContent=initials(p.display_name);
   const meta=document.createElement("span");meta.className="personmeta";
-  const top=document.createElement("span");top.className="person-topline";const strong=document.createElement("strong");strong.textContent=(p.display_name||"مستخدم")+(p.user_id===myId?" (أنت)":"");top.appendChild(strong);if(p.is_verified){const verified=document.createElement("span");verified.className="seif-verified-badge";verified.textContent="✓";verified.title="حساب موثّق من إدارة Seif Messages";verified.setAttribute("aria-label",verified.title);top.appendChild(verified);}
+  const top=document.createElement("span");top.className="person-topline";const strong=document.createElement("strong");strong.textContent=isSeif?"سيف":(p.display_name||"مستخدم")+(p.user_id===myId?" (أنت)":"");if(isSeif){strong.classList.add("seif-owner-name");}top.appendChild(strong);if(isSeif)addSeifCrown(top);if(p.is_verified){const verified=document.createElement("span");verified.className="seif-verified-badge";verified.textContent="✓";verified.title="حساب موثّق من إدارة Seif Messages";verified.setAttribute("aria-label",verified.title);top.appendChild(verified);}
   const last=lastMessagesByUser[p.user_id];if(last){const tm=document.createElement("small");tm.className="person-time";tm.textContent=timeLabel(last.created_at);top.appendChild(tm);}
   const preview=document.createElement("span");preview.className="person-preview";const previewText=document.createElement("span");previewText.className="person-preview-text";
   if(last){previewText.textContent=last.deleted_at?"تم حذف الرسالة":last.image_data?(last.body?last.body:"صورة"):last.body||"رسالة";if(last.sender_id===myId){const ticks=document.createElement("span");ticks.className="person-ticks";ticks.textContent=last.read_at?"✓✓":last.delivered_at?"✓✓":"✓";ticks.title=last.read_at?"تمت القراءة":last.delivered_at?"تم التسليم":"تم الإرسال";preview.appendChild(ticks);}}
@@ -427,7 +432,7 @@ function openContactProfile(personId=selectedId){
  const p=people.find(x=>x.user_id===personId);if(!p)return;
  const root=$("contactProfile");root.replaceChildren();const avatar=document.createElement("div");avatar.className="avatar profile-avatar";
  if(p.avatar_data){const img=document.createElement("img");img.src=p.avatar_data;img.alt="";avatar.appendChild(img);}else avatar.textContent=initials(p.display_name);
- const name=document.createElement("h2");name.textContent=p.display_name||"جهة اتصال";
+ const name=document.createElement("h2");name.textContent=p.user_id===SEIF_ARABIC_ID?"سيف":p.display_name||"جهة اتصال";if(p.user_id===SEIF_ARABIC_ID){name.classList.add("seif-owner-name");addSeifCrown(name);}
  const online=Date.now()-new Date(p.last_seen).getTime()<90000;const state=document.createElement("p");state.textContent=online?"متصل الآن":"آخر ظهور: "+timeLabel(p.last_seen);
  const share=document.createElement("button");share.type="button";share.className="primary-button share-link-button";share.textContent="مشاركة رابط الملف الشخصي";
  share.addEventListener("click",()=>shareAppLink("user",p.user_id,"افتح ملفي على Seif Messages"));
@@ -1026,6 +1031,7 @@ const currentGoldDeviceId=ownerGoldDeviceId();let activeGoldDeviceId=registeredG
   if(error||role?.role!=="owner")return;
   window.seifIsOwner=true;
   createOwnerPanel(role.gold_device_id);
+  await loadPeople();
   try{await window.seifModerationAction("verify",myId,{display_name:currentName()||"Seif"});}catch(verifyError){console.warn("Owner profile verification could not be synced",verifyError);}
  }catch(error){console.warn("Owner panel is not available",error);}
 })();
