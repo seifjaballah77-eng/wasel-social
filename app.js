@@ -528,7 +528,10 @@ async function recordMissedIncomingCall(message,kind){
  const key="missed-"+String(message.id);if(handledCallOffers.has(key))return;handledCallOffers.add(key);
  const title=kind==="video"?"مكالمة فيديو فائتة":"مكالمة صوتية فائتة";
  if("Notification" in window&&Notification.permission==="granted"){try{new Notification(title,{body:"من "+(message.sender_name||"جهة اتصال"),tag:"seif-missed-"+message.id});}catch(e){}}
- try{await api("wasel_chat_messages",{method:"POST",headers:{"Prefer":"return=minimal"},body:JSON.stringify({room_id:ROOM,sender_id:myId,sender_name:currentName()||"مستخدم",recipient_id:message.sender_id,body:[CALL_LOG_PREFIX,kind,"missed","0"].join("|"),image_data:null})});}catch(e){console.warn("Missed call log could not be saved",e);}
+ try{
+  await api("wasel_chat_messages",{method:"POST",headers:{"Prefer":"return=minimal"},body:JSON.stringify({room_id:ROOM,sender_id:myId,sender_name:currentName()||"مستخدم",recipient_id:message.sender_id,body:[CALL_LOG_PREFIX,kind,"missed","0"].join("|"),image_data:null})});
+  await api("wasel_chat_messages?id=eq."+encodeURIComponent(message.id)+"&recipient_id=eq."+encodeURIComponent(myId),{method:"PATCH",headers:{"Prefer":"return=minimal"},body:JSON.stringify({body:[CALL_OFFER_PREFIX,kind,"missed-recorded",String(Date.now())].join("|")})});
+ }catch(e){console.warn("Missed call log could not be saved",e);}
 }
 let incomingInitialized=false;
 async function pollIncoming(){
