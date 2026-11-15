@@ -1261,3 +1261,7 @@ button:focus-visible,input:focus-visible{
   .chat.is-entering{animation:none}
   .head-icon,.mobile-back,.sidebar-icon,.attach-button,.emoji-trigger,#sendMessage{transition:none}
 }
+
+/* Keep the speech-bubble tails visually joined to the bubble surface. */
+.bubble::after{z-index:0}
+.bubble>*{position:relative;z-index:1}
