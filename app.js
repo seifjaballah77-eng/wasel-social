@@ -740,3 +740,168 @@ document.addEventListener("visibilitychange",()=>{if(document.visibilityState===
     }
   }
 })();
+
+// Seif owner authentication (separate from legacy chat-device identity).
+(function setupSeifOwnerLogin(){
+  const OWNER_ID = "4ce247c3-6439-40b4-8de7-0130895f3e01";
+  const AUTH_STORAGE_KEY = "seif-owner-auth-v1";
+  let authClient = null;
+  let loadingClient = null;
+  let verifiedOwner = false;
+
+  const topRight = document.querySelector(".topright");
+  if (!topRight || document.getElementById("ownerLoginButton")) return;
+
+  const ownerButton = document.createElement("button");
+  ownerButton.id = "ownerLoginButton";
+  ownerButton.type = "button";
+  ownerButton.className = "owner-login-button";
+  ownerButton.textContent = "دخول المالك";
+  topRight.prepend(ownerButton);
+
+  const overlay = document.createElement("div");
+  overlay.id = "ownerAuthOverlay";
+  overlay.className = "owner-auth-overlay";
+  overlay.hidden = true;
+  overlay.innerHTML = `
+    <section class="owner-auth-card" role="dialog" aria-modal="true" aria-labelledby="ownerAuthTitle">
+      <button class="owner-auth-close" type="button" aria-label="إغلاق">×</button>
+      <div class="owner-auth-mark">S</div>
+      <span class="owner-auth-eyebrow">SEIF MESSAGES · OWNER</span>
+      <h2 id="ownerAuthTitle">تسجيل دخول المالك</h2>
+      <p class="owner-auth-description">استخدم بريد حساب المالك وكلمة المرور المسجلين في Supabase.</p>
+      <form id="ownerAuthForm">
+        <label for="ownerAuthEmail">البريد الإلكتروني</label>
+        <input id="ownerAuthEmail" type="email" autocomplete="username" required value="seifjaballah77@gmail.com" dir="ltr">
+        <label for="ownerAuthPassword">كلمة المرور</label>
+        <input id="ownerAuthPassword" type="password" autocomplete="current-password" required minlength="6" placeholder="أدخل كلمة المرور" dir="ltr">
+        <button id="ownerAuthSubmit" class="owner-auth-submit" type="submit">تسجيل الدخول</button>
+      </form>
+      <p id="ownerAuthStatus" class="owner-auth-status" role="status" aria-live="polite"></p>
+      <button id="ownerAuthSignOut" class="owner-auth-signout" type="button" hidden>تسجيل الخروج</button>
+      <small class="owner-auth-note">لا تشارك كلمة المرور مع أي شخص. لا يوجد إنشاء حساب مالك من هذه الشاشة.</small>
+    </section>`;
+  document.body.append(overlay);
+
+  const $o = id => document.getElementById(id);
+  const close = () => { overlay.hidden = true; };
+  overlay.querySelector(".owner-auth-close").addEventListener("click", close);
+  overlay.addEventListener("click", event => { if (event.target === overlay) close(); });
+  document.addEventListener("keydown", event => { if (event.key === "Escape" && !overlay.hidden) close(); });
+
+  function setStatus(message, error=false) {
+    const el = $o("ownerAuthStatus");
+    el.textContent = message;
+    el.classList.toggle("is-error", error);
+  }
+
+  function setOwnerState(isOwner) {
+    verifiedOwner = !!isOwner;
+    ownerButton.textContent = verifiedOwner ? "المالك: متصل" : "دخول المالك";
+    ownerButton.classList.toggle("is-verified", verifiedOwner);
+    $o("ownerAuthForm").hidden = verifiedOwner;
+    $o("ownerAuthSignOut").hidden = !verifiedOwner;
+    $o("ownerAuthPassword").value = "";
+    if (verifiedOwner) setStatus("تم تسجيل الدخول والتحقق من صلاحية المالك بنجاح.");
+  }
+
+  async function loadAuthClient() {
+    if (authClient) return authClient;
+    if (loadingClient) return loadingClient;
+    loadingClient = new Promise((resolve, reject) => {
+      if (window.supabase && typeof window.supabase.createClient === "function") {
+        resolve();
+        return;
+      }
+      const script = document.createElement("script");
+      script.src = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js";
+      script.crossOrigin = "anonymous";
+      script.onload = () => window.supabase?.createClient ? resolve() : reject(new Error("تعذر تحميل مكتبة تسجيل الدخول."));
+      script.onerror = () => reject(new Error("تعذر تحميل مكتبة Supabase. تحقق من الاتصال بالإنترنت."));
+      document.head.append(script);
+    }).then(() => {
+      authClient = window.supabase.createClient(
+        "https://qlcrvffejuscbftjotmp.supabase.co",
+        "sb_publishable_nY14ZzU_YiOfBrySQlBuFA_G-jg2VOc",
+        { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, storageKey: AUTH_STORAGE_KEY } }
+      );
+      return authClient;
+    });
+    return loadingClient;
+  }
+
+  async function verifyOwner(user) {
+    if (!user || user.id !== OWNER_ID) return false;
+    const { data, error } = await authClient
+      .from("seif_admin_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (error) throw error;
+    return data?.role === "owner";
+  }
+
+  ownerButton.addEventListener("click", async () => {
+    overlay.hidden = false;
+    setStatus("جارٍ التحقق من جلسة المالك…");
+    try {
+      await loadAuthClient();
+      const { data: { session }, error } = await authClient.auth.getSession();
+      if (error) throw error;
+      if (session?.user && await verifyOwner(session.user)) {
+        setOwnerState(true);
+      } else {
+        setOwnerState(false);
+        setStatus("أدخل بيانات حساب المالك للمتابعة.");
+        $o("ownerAuthForm").hidden = false;
+      }
+    } catch (error) {
+      setOwnerState(false);
+      setStatus(error.message || "تعذر التحقق من الحساب.", true);
+    }
+  });
+
+  $o("ownerAuthForm").addEventListener("submit", async event => {
+    event.preventDefault();
+    const submit = $o("ownerAuthSubmit");
+    const email = $o("ownerAuthEmail").value.trim();
+    const password = $o("ownerAuthPassword").value;
+    submit.disabled = true;
+    submit.textContent = "جارٍ التحقق…";
+    setStatus("يتم التحقق من بيانات الدخول وصلاحية المالك…");
+    try {
+      await loadAuthClient();
+      const { data, error } = await authClient.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+      if (!await verifyOwner(data.user)) {
+        await authClient.auth.signOut();
+        setOwnerState(false);
+        throw new Error("هذا الحساب لا يملك صلاحية المالك في Seif Messages.");
+      }
+      setOwnerState(true);
+    } catch (error) {
+      setStatus(error.message || "فشل تسجيل الدخول. تحقق من البريد وكلمة المرور.", true);
+    } finally {
+      submit.disabled = false;
+      submit.textContent = "تسجيل الدخول";
+    }
+  });
+
+  $o("ownerAuthSignOut").addEventListener("click", async () => {
+    try {
+      if (authClient) await authClient.auth.signOut();
+      setOwnerState(false);
+      setStatus("تم تسجيل الخروج من حساب المالك.");
+    } catch (error) {
+      setStatus(error.message || "تعذر تسجيل الخروج.", true);
+    }
+  });
+
+  loadAuthClient().then(async () => {
+    const { data } = await authClient.auth.getSession();
+    if (data?.session?.user) {
+      try { setOwnerState(await verifyOwner(data.session.user)); }
+      catch (_) { setOwnerState(false); }
+    }
+  }).catch(() => {});
+})();
