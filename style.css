@@ -945,3 +945,27 @@ body.mobile-chat-open .topbar .profile-open {
 .share-link-button:hover{border-color:#f2cc72;box-shadow:0 0 18px rgba(218,170,69,.16);transform:translateY(-1px)}
 .share-link-button:focus-visible{outline:2px solid #f2cc72;outline-offset:2px}
 .contact-card .share-link-button{margin-top:9px}
+
+
+/* Owner sign-in */
+.owner-login-button{display:inline-flex;align-items:center;justify-content:center;min-height:35px;padding:7px 12px;border:1px solid #b58b36;border-radius:10px;background:linear-gradient(135deg,#30230f,#111827);color:#f3d58c;font:inherit;font-size:11px;font-weight:800;white-space:nowrap;cursor:pointer}
+.owner-login-button.is-verified{border-color:#20bd89;background:linear-gradient(135deg,#103d32,#10251f);color:#9affd8}
+.owner-auth-overlay{position:fixed;inset:0;z-index:5000;display:grid;place-items:center;padding:16px;background:rgba(1,7,15,.82);backdrop-filter:blur(12px)}
+.owner-auth-overlay[hidden]{display:none!important}
+.owner-auth-card{position:relative;width:min(420px,100%);padding:28px;border:1px solid #344762;border-radius:22px;background:linear-gradient(145deg,#111e31,#080f1b);color:#edf5ff;box-shadow:0 25px 90px #000b,0 0 28px #d8a84a18;display:flex;flex-direction:column;gap:10px}
+.owner-auth-close{position:absolute;top:12px;inset-inline-end:13px;width:34px;height:34px;border:1px solid #344762;border-radius:10px;background:#14243a;color:#eaf2ff;font-size:24px;cursor:pointer}
+.owner-auth-mark{width:48px;height:48px;display:grid;place-items:center;border-radius:15px;background:linear-gradient(145deg,#f2d58e,#9c6d24);color:#17120a;font-size:22px;font-weight:900}
+.owner-auth-eyebrow{color:#e4c477;font-size:10px;font-weight:900;letter-spacing:1.5px}
+.owner-auth-card h2{margin:0;font-size:23px}
+.owner-auth-description,.owner-auth-note{margin:0;color:#9fb2ca;font-size:12px;line-height:1.8}
+.owner-auth-card form{display:flex;flex-direction:column;gap:9px;margin-top:5px}
+.owner-auth-card label{color:#d9e5f4;font-size:12px;font-weight:700}
+.owner-auth-card input{width:100%;min-height:43px;padding:10px 12px;border:1px solid #344963;border-radius:10px;background:#091525;color:#f1f7ff;font:inherit;font-size:13px;outline:none}
+.owner-auth-card input:focus{border-color:#d5ad58;box-shadow:0 0 0 3px #d5ad581a}
+.owner-auth-submit{min-height:44px;margin-top:7px;border:0;border-radius:11px;background:linear-gradient(135deg,#f0d38c,#b98534);color:#1a1409;font:inherit;font-size:13px;font-weight:900;cursor:pointer}
+.owner-auth-submit:disabled{opacity:.6;cursor:wait}
+.owner-auth-status{min-height:20px;margin:2px 0 0;color:#83eac0;font-size:12px;line-height:1.7}
+.owner-auth-status.is-error{color:#ff9696}
+.owner-auth-signout{min-height:39px;border:1px solid #8b3c45;border-radius:10px;background:#351821;color:#ffc5ca;font:inherit;font-size:12px;font-weight:800;cursor:pointer}
+.owner-auth-note{padding-top:9px;border-top:1px solid #293b52;font-size:10px}
+@media(max-width:620px){.owner-login-button{min-height:30px;padding:5px 7px;font-size:9px}.owner-auth-card{padding:23px 18px}}
