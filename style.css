@@ -1028,3 +1028,19 @@ body.mobile-chat-open .topbar .profile-open {
 .admin-user-tools button:disabled{opacity:.6;cursor:wait}
 .admin-user-tools small{color:#aab6c1;font-size:11px;line-height:1.6}
 .owner-floating-action{border-color:#b88b39;background:linear-gradient(145deg,#21190e,#100e09);color:#f2d58c}
+
+
+/* Owner dashboard extensions */
+.admin-extra-tools{margin:18px 0;padding:16px;border:1px solid var(--line,rgba(120,140,160,.22));border-radius:18px;background:rgba(120,140,160,.045)}
+.admin-extra-tools h3{margin:0 0 12px}.admin-tabs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+.admin-tabs button,.admin-report-actions button{border:1px solid var(--line,rgba(120,140,160,.25));border-radius:10px;padding:9px 12px;background:var(--panel,#202833);color:inherit;cursor:pointer}
+.admin-tabs button.active{border-color:var(--accent,#8c9cff);background:rgba(120,140,255,.13)}
+.admin-extra-content{display:grid;gap:10px}.admin-extra-content small{display:block;line-height:1.7;opacity:.72}
+.admin-stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
+.admin-stat-grid article{display:grid;gap:5px;padding:14px;border:1px solid var(--line,rgba(120,140,160,.2));border-radius:14px;background:rgba(120,140,160,.06)}
+.admin-stat-grid b{font-size:1.55rem;font-variant-numeric:tabular-nums}.admin-stat-grid span{font-size:.83rem;opacity:.8}
+.admin-report-actions{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}
+.admin-audit-row{padding:10px 12px;border-bottom:1px solid var(--line,rgba(120,140,160,.18));margin:0;font-size:.9rem}
+.admin-extra-content textarea{display:block;width:100%;min-height:95px;margin:8px 0;padding:12px;border:1px solid var(--line,rgba(120,140,160,.25));border-radius:12px;background:var(--input-bg,#111923);color:inherit;font:inherit}
+.admin-extra-content>button{justify-self:start;border:0;border-radius:10px;padding:10px 16px;background:var(--accent,#7288ff);color:white;cursor:pointer}
+@media(max-width:600px){.admin-tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.admin-tabs button{font-size:.82rem}}
