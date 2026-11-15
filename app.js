@@ -857,7 +857,7 @@ function syncOwnerGoldButton(button,registeredDeviceId,currentDeviceId){const ac
 function createOwnerPanel(registeredGoldDeviceId=null){
  window.seifIsOwner=true;
  const ownerMenu=document.querySelector("#seifFloatingActions .seif-floating-menu");
- if(ownerMenu&&!ownerMenu.querySelector('[data-fab-action="admin"]')){const adminShortcut=document.createElement("button");adminShortcut.type="button";adminShortcut.className="seif-floating-action owner-floating-action";adminShortcut.dataset.fabAction="admin";adminShortcut.setAttribute("aria-label","لوحة تحكم المالك");adminShortcut.innerHTML=uiIcon("shield-check")+"<span>لوحة تحكم المالك</span>";ownerMenu.appendChild(adminShortcut);}
+ if(ownerMenu&&!ownerMenu.querySelector('[data-fab-action="admin"]')){const adminShortcut=document.createElement("button");adminShortcut.type="button";adminShortcut.className="seif-floating-action owner-floating-action";adminShortcut.dataset.fabAction="admin";adminShortcut.setAttribute("aria-label","لوحة تحكم المالك");adminShortcut.innerHTML=uiIcon("settings")+"<span>لوحة تحكم المالك</span>";ownerMenu.appendChild(adminShortcut);}
 const currentGoldDeviceId=ownerGoldDeviceId();let activeGoldDeviceId=registeredGoldDeviceId||null;applyOwnerGoldStyle(activeGoldDeviceId===currentGoldDeviceId);const blockOption=document.querySelector('[data-menu-action="block"]');if(blockOption)blockOption.textContent="تعليق حساب هذا الشخص";
  const top=document.querySelector(".topright");if(!top||document.getElementById("seifAdminButton"))return;
  const button=document.createElement("button");button.id="seifAdminButton";button.className="seif-admin-button";button.type="button";button.title="لوحة الإدارة";button.innerHTML='<span aria-hidden="true">♛</span> الإدارة';top.prepend(button);
