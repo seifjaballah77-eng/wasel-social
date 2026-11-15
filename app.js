@@ -151,6 +151,7 @@ async function startCall(kind,isIncoming=false,sharedRoomName=null){
     }
     if(!info.peerJoined&&Date.now()-info.startedAt>45000){
      status("انتهت مهلة انتظار رد الطرف الآخر.",true);
+     try{await api("wasel_chat_messages?id=eq."+encodeURIComponent(offerMessageId)+"&recipient_id=eq."+encodeURIComponent(peerId),{method:"PATCH",headers:{"Prefer":"return=minimal"},body:JSON.stringify({body:[CALL_OFFER_PREFIX,info.kind,"missed",String(Date.now())].join("|")})});}catch(e){}
      await endCall();
     }
    }catch(e){console.warn("Call signaling check failed",e);}
@@ -523,18 +524,26 @@ document.addEventListener("click",e=>{if(!$("sidebarMenu").hidden&&!$("sidebarMe
 $("profileOpen")?.addEventListener("click",openProfile);$("editName").addEventListener("click",openProfile);$("chatBackground").addEventListener("change",e=>{const all=JSON.parse(localStorage.getItem(BG_KEY)||"{}");if(selectedId){all[selectedId]=e.target.value==="custom"&&all[selectedId]?.type==="custom"?all[selectedId]:(e.target.value==="custom"?"classic":e.target.value);localStorage.setItem(BG_KEY,JSON.stringify(all));}applyChatBackground();});$("wallpaperImage").addEventListener("change",e=>{const file=e.target.files&&e.target.files[0];e.target.value="";if(!file)return;if(!selectedId){status("اختر محادثة أولًا لتخصيص خلفيتها.",true);return;}if(!["image/jpeg","image/png","image/webp"].includes(file.type)){status("اختر صورة JPG أو PNG أو WEBP.",true);return;}if(file.size>12*1024*1024){status("حجم الصورة كبير؛ اختر صورة أصغر من 12MB.",true);return;}const reader=new FileReader();reader.onerror=()=>status("تعذر قراءة الصورة المختارة.",true);reader.onload=()=>{const img=new Image();img.onerror=()=>status("تعذر فتح الصورة.",true);img.onload=()=>{try{const max=1600,scale=Math.min(1,max/Math.max(img.width,img.height)),canvas=document.createElement("canvas");canvas.width=Math.max(1,Math.round(img.width*scale));canvas.height=Math.max(1,Math.round(img.height*scale));const ctx=canvas.getContext("2d",{willReadFrequently:true});ctx.drawImage(img,0,0,canvas.width,canvas.height);const pixels=ctx.getImageData(0,0,canvas.width,canvas.height).data;let total=0,count=0;const step=Math.max(4,Math.floor(pixels.length/12000/4)*4);for(let i=0;i<pixels.length;i+=step){total+=(.2126*pixels[i]+.7152*pixels[i+1]+.0722*pixels[i+2])/255;count++;}const dark=count?total/count<.48:false,data=canvas.toDataURL("image/jpeg",.78),all=JSON.parse(localStorage.getItem(BG_KEY)||"{}");all[selectedId]={type:"custom",data,dark};localStorage.setItem(BG_KEY,JSON.stringify(all));applyChatBackground();status("تم تطبيق الخلفية الخاصة وتنسيق ألوان الفقاعات تلقائيًا.");}catch(err){status("تعذر تجهيز الصورة؛ جرّب صورة أصغر.",true);}};img.src=String(reader.result);};reader.readAsDataURL(file);});$("muteChat").addEventListener("click",()=>{const all=JSON.parse(localStorage.getItem(MUTE_KEY)||"{}");if(!selectedId)return;all[selectedId]=!all[selectedId];localStorage.setItem(MUTE_KEY,JSON.stringify(all));$("muteChat").innerHTML=uiIcon(all[selectedId]?"bellOff":"bell")+" "+(all[selectedId]?"إلغاء كتم المحادثة":"كتم المحادثة");status(all[selectedId]?"تم كتم إشعارات هذه المحادثة على هذا الجهاز":"تم إلغاء كتم المحادثة");});$("profileClose").addEventListener("click",()=>$("profileModal").hidden=true);$("contactClose").addEventListener("click",()=>$("contactModal").hidden=true);$("chatAvatarButton").addEventListener("click",openContactProfile);$("contactMessageSearch").addEventListener("click",()=>{$("contactModal").hidden=true;const term=prompt("اكتب كلمة للبحث في المحادثة:");if(term){const found=messages.find(m=>(m.body||"").toLowerCase().includes(term.toLowerCase()));status(found?"تم العثور على رسالة مطابقة.":"لا توجد رسالة مطابقة.");}});$("themeModeToggle").addEventListener("click",()=>applyMode(document.documentElement.dataset.mode==="dark"?"light":"dark"));$("messageSearchInput").addEventListener("input",e=>{messageSearchTerm=e.target.value.trim().toLocaleLowerCase();renderMessages();});$("imageViewerClose").addEventListener("click",closeImageViewer);$("imageViewer").addEventListener("click",e=>{if(e.target===$("imageViewer"))closeImageViewer();});$("profilePhotoInput").addEventListener("change",e=>{if(e.target.files?.[0])saveProfilePhoto(e.target.files[0]);e.target.value="";});$("favoritesToggle").addEventListener("click",()=>{const active=$("favoritesToggle").getAttribute("aria-pressed")!=="true";$("favoritesToggle").setAttribute("aria-pressed",String(active));$("favoritesToggle").innerHTML=uiIcon("star")+" "+(active?"عرض الكل":"المفضّلون");renderPeople();});$("themeSelect").addEventListener("change",e=>applyTheme(e.target.value));
 document.querySelectorAll(".navitem").forEach(b=>b.addEventListener("click",()=>{const v=b.dataset.view;document.querySelectorAll(".navitem").forEach(n=>n.classList.toggle("active",n===b));if(v==="settings"){openProfile();return;}if(v==="people"||v==="chats"){document.body.classList.remove("mobile-chat-open");if(v==="chats"){$("peopleSearch").value="";renderPeople();}else $("peopleSearch").focus({preventScroll:true});}}));
 function openNameSetup(){$("displayNameInput").value=currentName();$("nameSetupError").hidden=true;$("nameSetup").hidden=false;$("displayNameInput").focus();}
+async function recordMissedIncomingCall(message,kind){
+ const key="missed-"+String(message.id);if(handledCallOffers.has(key))return;handledCallOffers.add(key);
+ const title=kind==="video"?"مكالمة فيديو فائتة":"مكالمة صوتية فائتة";
+ if("Notification" in window&&Notification.permission==="granted"){try{new Notification(title,{body:"من "+(message.sender_name||"جهة اتصال"),tag:"seif-missed-"+message.id});}catch(e){}}
+ try{await api("wasel_chat_messages",{method:"POST",headers:{"Prefer":"return=minimal"},body:JSON.stringify({room_id:ROOM,sender_id:myId,sender_name:currentName()||"مستخدم",recipient_id:message.sender_id,body:[CALL_LOG_PREFIX,kind,"missed","0"].join("|"),image_data:null})});}catch(e){console.warn("Missed call log could not be saved",e);}
+}
 let incomingInitialized=false;
 async function pollIncoming(){
  let rows=await api("wasel_chat_messages?select=id,sender_id,sender_name,body,image_data,created_at,delivered_at&recipient_id=eq."+encodeURIComponent(myId)+"&room_id=eq."+ROOM+"&order=created_at.desc&limit=100");if(myId===DOTS_ACCOUNT_ID||myId===ROUA_ID)rows=rows.filter(m=>m.sender_id===(myId===DOTS_ACCOUNT_ID?ROUA_ID:DOTS_ACCOUNT_ID));
  const callRows=rows.filter(m=>(m.body||"").startsWith(CALL_OFFER_PREFIX)&&m.sender_id!==myId);
  for(const m of callRows){
-  const bits=m.body.split("|");if(bits[2]!=="ringing"||handledCallOffers.has(String(m.id)))continue;
+  const bits=m.body.split("|"),kind=bits[1]==="video"?"video":"audio";
+  if(bits[2]==="missed"){await recordMissedIncomingCall(m,kind);continue;}
+  if(bits[2]!=="ringing"||handledCallOffers.has(String(m.id)))continue;
   if(Date.now()-new Date(m.created_at).getTime()>35000){
    handledCallOffers.add(String(m.id));
    try{await api("wasel_chat_messages?id=eq."+encodeURIComponent(m.id)+"&recipient_id=eq."+encodeURIComponent(myId),{method:"PATCH",headers:{"Prefer":"return=minimal"},body:JSON.stringify({body:[CALL_OFFER_PREFIX,bits[1],"missed",String(Date.now())].join("|")})});}catch(e){}
-   continue;
+   await recordMissedIncomingCall(m,kind);continue;
   }
-  showIncomingCall(m,bits[1]==="video"?"video":"audio");
+  showIncomingCall(m,kind);
  }
  const regularRows=rows.filter(m=>!(m.body||"").startsWith(CALL_OFFER_PREFIX));
  const newRows=regularRows.filter(m=>m.sender_id!==myId&&!notifiedIds.has(String(m.id)));
