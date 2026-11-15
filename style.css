@@ -1018,3 +1018,13 @@ body.mobile-chat-open .topbar .profile-open {
 .appeal-sent small{color:#91aebb}
 .admin-gold-note{display:block;margin:-8px 0 14px;color:#aab6c1;font-size:11px;line-height:1.7}
 .admin-gold-toggle:disabled{opacity:.6;cursor:wait}
+
+/* Owner tools are visible only after verified owner session */
+.admin-user-tools{display:grid;gap:9px;margin:16px 0;padding:14px;border:1px solid #b88b3955;border-radius:14px;background:rgba(10,10,10,.45)}
+.admin-user-tools h3{margin:0;color:#f0d18b;font-size:14px}
+.admin-user-tools input,.admin-user-tools textarea{width:100%;padding:11px 12px;border:1px solid #b88b3970;border-radius:9px;background:#0d1017;color:#f6f7fb;font:inherit;font-size:13px;outline:none}
+.admin-user-tools input:focus,.admin-user-tools textarea:focus{border-color:#e6bd67;box-shadow:0 0 0 3px #e6bd6720}
+.admin-user-tools button{padding:11px;border:1px solid #bd9145;border-radius:9px;background:linear-gradient(135deg,#f1d38c,#b47d2b);color:#1b1307;font:inherit;font-weight:800;cursor:pointer}
+.admin-user-tools button:disabled{opacity:.6;cursor:wait}
+.admin-user-tools small{color:#aab6c1;font-size:11px;line-height:1.6}
+.owner-floating-action{border-color:#b88b39;background:linear-gradient(145deg,#21190e,#100e09);color:#f2d58c}
