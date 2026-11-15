@@ -37,9 +37,31 @@ function currentPhoto(){return localStorage.getItem(PHOTO_KEY)||"";}
 function initials(name){return (name||"").trim().charAt(0)||"؟";}
 function timeLabel(value){return new Date(value).toLocaleTimeString("ar-TN",{hour:"2-digit",minute:"2-digit"});}
 function escapeText(v){return String(v??"");}
+function setConnectionState(state){
+ const node=$("connectionState");if(!node)return;
+ const labels={connecting:"جارٍ الاتصال…",online:"متصل",offline:"غير متصل بالإنترنت",service:"تعذر الوصول إلى الخدمة",ready:"جاهز للاتصال"};
+ node.textContent=labels[state]||labels.connecting;
+ node.dataset.state=state;
+}
 async function api(path,options={}){
- const response=await fetch(API+path,{...options,headers:{...headers,...(options.headers||{})}});
- if(!response.ok)throw new Error((await response.text())||("HTTP "+response.status));
+ if(!navigator.onLine){setConnectionState("offline");throw new TypeError("لا يوجد اتصال بالإنترنت");}
+ const controller=new AbortController();
+ const timeout=setTimeout(()=>controller.abort(),12000);
+ let response;
+ try{
+  response=await fetch(API+path,{...options,signal:controller.signal,headers:{...headers,...(options.headers||{})}});
+ }catch(error){
+  setConnectionState("service");
+  if(error.name==="AbortError")throw new Error("انتهت مهلة الاتصال. حاول مرة أخرى.");
+  throw new TypeError("تعذر الوصول إلى خدمة Seif Messages. تحقق من اتصالك ثم حاول مجددًا.");
+ }finally{clearTimeout(timeout);}
+ if(!response.ok){
+  const detail=await response.text().catch(()=>"");
+  const error=new Error(detail||("HTTP "+response.status));error.status=response.status;
+  if(response.status>=500)setConnectionState("service");
+  throw error;
+ }
+ setConnectionState("online");
  if(response.status===204)return [];
  const raw=await response.text();return raw?JSON.parse(raw):[];
 }
@@ -529,8 +551,10 @@ async function retryPendingMessage(id){
 async function retryAllPending(){for(const item of readPendingQueue()){if(!navigator.onLine)break;await retryPendingMessage(item.id);}}
 function installOfflineQueue(){
  updateOfflineBanner();
- window.addEventListener("offline",updateOfflineBanner);
- window.addEventListener("online",()=>{updateOfflineBanner();retryAllPending().catch(()=>{});refresh().catch(()=>{});});
+ setConnectionState(navigator.onLine?"connecting":"offline");
+ window.addEventListener("offline",()=>{setConnectionState("offline");updateOfflineBanner();});
+ window.addEventListener("online",()=>{setConnectionState("connecting");updateOfflineBanner();retryAllPending().catch(()=>{});refresh().catch(()=>{});});
+ window.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")refresh().catch(()=>{});});
 }
 async function sendText(){
  const field=$("messageText"),body=field.value.trim();if(!body||!selectedId||selectedId===myId)return;if(!canContact(selectedId)){contactRestrictionNotice();return;}
@@ -590,7 +614,7 @@ async function pollIncoming(){
  const undelivered=rows.filter(m=>!m.delivered_at&&m.sender_id!==myId);
  if(undelivered.length){const now=new Date().toISOString();await api("wasel_chat_messages?id=in.("+undelivered.map(m=>m.id).join(",")+")&recipient_id=eq."+encodeURIComponent(myId)+"&delivered_at=is.null",{method:"PATCH",headers:{"Prefer":"return=minimal"},body:JSON.stringify({delivered_at:now})});}
 }
-async function refresh(){if(polling||!currentName())return;polling=true;try{if(await checkAccountModeration())return;await savePresence();await loadPeople();await handleSharedLink();await pollIncoming();if(selectedId)await loadMessages();}catch(e){status("قاعدة البيانات تحتاج تحديث schema.sql في Supabase. "+e.message,true);}finally{polling=false;}}
+async function refresh(){if(polling)return;if(!navigator.onLine){setConnectionState("offline");updateOfflineBanner();return;}if(!currentName()){setConnectionState("ready");return;}polling=true;setConnectionState("connecting");try{if(await checkAccountModeration())return;await savePresence();await loadPeople();await handleSharedLink();await pollIncoming();if(selectedId)await loadMessages();setConnectionState("online");}catch(e){setConnectionState(e instanceof TypeError||!navigator.onLine?"service":"online");status(!navigator.onLine?"انقطع اتصال الإنترنت. ستتم إعادة المحاولة تلقائيًا.":e instanceof TypeError?"تعذر الوصول إلى خدمة التطبيق. تحقق من اتصالك ثم حاول مجددًا.":"تعذر تحديث البيانات: "+e.message,true);}finally{polling=false;}}
 $("peopleSearch")?.addEventListener("input",renderPeople);
 $("deleteAccountButton").addEventListener("click",async()=>{
  if(!currentName()){status("لا يوجد حساب نشط لحذفه.",true);return;}
@@ -689,7 +713,7 @@ function setupMobileKeyboard(){
 }
 
 let lastBackgroundSync=Date.now();
-function start(){if(selectedId&&!canContact(selectedId)){selectedId=null;localStorage.removeItem(SELECTED_KEY);}setupMobileNavigation();setupMobileKeyboard();installPrivacyControls();installOfflineQueue();setupExtras();installFloatingActions();loadPublicAppSettings();ensureLocalAccount();setupAutoLock();applyTheme(localStorage.getItem(THEME_KEY)||"blue");applyMode("dark");const name=currentName();$("nameSetup").hidden=Boolean(name);$("identity").textContent=name?"أهلاً، "+name:"لم تختر اسمًا بعد";$("setupNotice").hidden=true;$("setupNotice").textContent=""; $("messageText").disabled=true;$("sendMessage").disabled=true;$("chatImage").disabled=true;renderPeople();if(name)refresh();setInterval(()=>{if(document.visibilityState==="visible"){lastBackgroundSync=Date.now();refresh();}else if(Date.now()-lastBackgroundSync>=3000){lastBackgroundSync=Date.now();refresh();}},3000);}
+function start(){if(selectedId&&!canContact(selectedId)){selectedId=null;localStorage.removeItem(SELECTED_KEY);}setupMobileNavigation();setupMobileKeyboard();installPrivacyControls();installOfflineQueue();setupExtras();installFloatingActions();loadPublicAppSettings();ensureLocalAccount();setupAutoLock();applyTheme(localStorage.getItem(THEME_KEY)||"blue");applyMode("dark");const name=currentName();$("nameSetup").hidden=Boolean(name);$("identity").textContent=name?"أهلاً، "+name:"لم تختر اسمًا بعد";$("setupNotice").hidden=true;$("setupNotice").textContent=""; $("messageText").disabled=true;$("sendMessage").disabled=true;$("chatImage").disabled=true;renderPeople();if(name)refresh();setInterval(()=>{if(document.visibilityState==="visible"){lastBackgroundSync=Date.now();refresh();}else if(Date.now()-lastBackgroundSync>=30000){lastBackgroundSync=Date.now();refresh();}},5000);}
 
 const notificationsButton=$("notificationsButton");if(notificationsButton&&!notificationsButton.dataset.ready){notificationsButton.dataset.ready="1";notificationsButton.addEventListener("click",async()=>{if(("Notification"in window)&&Notification.permission==="granted"&&localStorage.getItem(NOTIFY_KEY)==="on"){localStorage.setItem(NOTIFY_KEY,"off");syncNotificationButton();status("تم إيقاف إشعارات الرسائل على هذا الجهاز.");return;}await enableNotifications();});syncNotificationButton();}
 const manualRefreshButton=$("manualRefresh");if(manualRefreshButton&&!manualRefreshButton.dataset.ready){manualRefreshButton.dataset.ready="1";manualRefreshButton.addEventListener("click",async()=>{if(manualRefreshButton.disabled)return;manualRefreshButton.disabled=true;manualRefreshButton.setAttribute("aria-busy","true");manualRefreshButton.title="جارٍ تحديث التطبيق…";try{if("serviceWorker" in navigator){const regs=await navigator.serviceWorker.getRegistrations();await Promise.all(regs.map(reg=>reg.unregister()));}if("caches" in window){const keys=await caches.keys();await Promise.all(keys.map(key=>caches.delete(key)));}}catch(e){}const url=new URL(window.location.href);url.searchParams.set("refresh",String(Date.now()));window.location.replace(url.toString());});}
