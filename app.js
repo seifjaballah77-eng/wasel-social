@@ -972,10 +972,7 @@ const currentGoldDeviceId=ownerGoldDeviceId();let activeGoldDeviceId=registeredG
     root.replaceChildren();const h=document.createElement("strong");h.textContent="فحص حالة التشفير";root.append(h);
     const warning=document.createElement("p");warning.textContent="تنبيه مهم: النسخة الحالية لا تطبق تشفيرًا تامًا بين الطرفين (E2EE) على الرسائل؛ لا توجد مفاتيح E2EE يمكن اختبارها بعد. وجود HTTPS أو قفل المحادثة المحلي لا يعني أن الرسائل مشفرة من طرف إلى طرف.";root.append(warning);
     const details=document.createElement("small");details.textContent="لن نعرض مفاتيح سرية أو نطلب نسخها إلى لوحة الإدارة. يلزم تصميم بروتوكول تشفير ومراجعة أمنية قبل تفعيل هذه الميزة.";root.append(details);
-   }else if(tab==="heatmap"){
-    root.replaceChildren();const p=document.createElement("p");p.textContent="الخريطة الحرارية غير متاحة حاليًا: التطبيق لا يجمع بيانات دولة/منطقة موثوقة وموافَقًا عليها لكل مستخدم. لن نخمن موقع الأشخاص من عناوين IP أو نعرض مواقع دقيقة.";root.append(p);
-    const s=document.createElement("small");s.textContent="يمكن إضافتها لاحقًا بإحصاءات مجمّعة حسب الدولة، مع تقليل الدقة وعدم تخزين الموقع الدقيق ومراعاة موافقة المستخدم.";root.append(s);
-   }else if(tab==="stats"){
+    }else if(tab==="stats"){
     const r=await window.seifModerationAction("stats","admin-stats"),v=r.stats||{};
     root.innerHTML='<div class="admin-stat-grid"><article><b>'+Number(v.registeredBrowserIds||0)+'</b><span>معرّفات أجهزة/متصفحات مسجلة</span></article><article><b>'+Number(v.messages||0)+'</b><span>الرسائل</span></article><article><b>'+Number(v.callLogEntries||0)+'</b><span>سجلات المكالمات</span></article><article><b>'+Number(v.pendingReports||0)+'</b><span>بلاغات تنتظر المراجعة</span></article><article><b>'+Number(v.suspendedIds||0)+'</b><span>معرّفات معلّقة</span></article></div><small>تنبيه: الأرقام الحالية تخص معرّفات المتصفح والبيانات الموجودة في النموذج الحالي، وليست عدد حسابات موثقة أو مستخدمين فريدين.</small>';
    }else if(tab==="reports"){
