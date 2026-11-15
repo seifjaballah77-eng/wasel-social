@@ -11,7 +11,7 @@ localStorage.setItem(ID_KEY,myId);
 let lastMessagesByUser={},people=[],selectedId=localStorage.getItem(SELECTED_KEY)||null,messages=[],unreadCounts={},lastSignature="",polling=false,replyTo=null,typingTimer=null,lastIncomingId=0,notifiedIds=new Set(),messageSearchTerm="";
 const headers={"apikey":SUPABASE_KEY,"Authorization":"Bearer "+SUPABASE_KEY,"Content-Type":"application/json"};
 const MODERATION_URL = SUPABASE_URL + "/functions/v1/wasel-moderation";
-const OWNER_GOLD_KEY = "seif-owner-gold-device-v1";
+const OWNER_GOLD_DEVICE_KEY = "seif-owner-gold-device-id-v1";
 let moderationCache = null, moderationCheckedAt = 0, moderationOverlay = null;
 function status(text,error=false){$("callStatus").textContent=text;$("callStatus").className="statusline"+(error?" error":"");}
 function currentName(){return localStorage.getItem(PROFILE_KEY)||"";}
@@ -848,26 +848,18 @@ function installFloatingActions(){
 }
 
 
-function applyOwnerGoldStyle(enabled){
- const existing=document.getElementById("seifOwnerGoldStyles");
- if(!enabled){existing?.remove();document.documentElement.removeAttribute("data-owner-gold");return;}
- document.documentElement.setAttribute("data-owner-gold","true");
- if(!existing){const link=document.createElement("link");link.id="seifOwnerGoldStyles";link.rel="stylesheet";link.href="./owner-gold.css?v=1";document.head.appendChild(link);}
-}
-function syncOwnerGoldButton(button){
- const enabled=localStorage.getItem(OWNER_GOLD_KEY)==="enabled";
- button.textContent=enabled?"إيقاف المظهر الذهبي عن هذا الجهاز":"تفعيل المظهر الذهبي على هذا الجهاز";
- button.setAttribute("aria-pressed",String(enabled));
-}
-
-function createOwnerPanel(){
- window.seifIsOwner=true;applyOwnerGoldStyle(localStorage.getItem(OWNER_GOLD_KEY)==="enabled");const blockOption=document.querySelector('[data-menu-action="block"]');if(blockOption)blockOption.textContent="تعليق حساب هذا الشخص";
+function ownerGoldDeviceId(){let id=localStorage.getItem(OWNER_GOLD_DEVICE_KEY);if(!id){id=crypto.randomUUID();localStorage.setItem(OWNER_GOLD_DEVICE_KEY,id);}return id;}
+function applyOwnerGoldStyle(enabled){const existing=document.getElementById("seifOwnerGoldStyles");if(!enabled){existing?.remove();document.documentElement.removeAttribute("data-owner-gold");return;}document.documentElement.setAttribute("data-owner-gold","true");if(!existing){const link=document.createElement("link");link.id="seifOwnerGoldStyles";link.rel="stylesheet";link.href="./owner-gold.css?v=2";document.head.appendChild(link);}}
+function syncOwnerGoldButton(button,registeredDeviceId,currentDeviceId){const active=registeredDeviceId===currentDeviceId;button.textContent=active?"إيقاف المظهر الذهبي عن هذا الجهاز":registeredDeviceId?"نقل المظهر الذهبي إلى هذا الجهاز":"تفعيل المظهر الذهبي على هذا الجهاز";button.setAttribute("aria-pressed",String(active));}
+function createOwnerPanel(registeredGoldDeviceId=null){
+ window.seifIsOwner=true;const currentGoldDeviceId=ownerGoldDeviceId();let activeGoldDeviceId=registeredGoldDeviceId||null;applyOwnerGoldStyle(activeGoldDeviceId===currentGoldDeviceId);const blockOption=document.querySelector('[data-menu-action="block"]');if(blockOption)blockOption.textContent="تعليق حساب هذا الشخص";
  const top=document.querySelector(".topright");if(!top||document.getElementById("seifAdminButton"))return;
  const button=document.createElement("button");button.id="seifAdminButton";button.className="seif-admin-button";button.type="button";button.title="لوحة الإدارة";button.innerHTML='<span aria-hidden="true">♛</span> الإدارة';top.prepend(button);
  const overlay=document.createElement("div");overlay.id="seifAdminOverlay";overlay.className="seif-admin-overlay";overlay.hidden=true;overlay.innerHTML='<section class="seif-admin-panel" dir="rtl" role="dialog" aria-modal="true"><header><div><span class="admin-kicker">SEIF MESSAGES · CONTROL CENTER</span><h2>لوحة الإدارة</h2><p>إدارة التعليقات ومراجعة اعتراضات المستخدمين</p></div><button type="button" class="admin-close" aria-label="إغلاق">×</button></header><div class="admin-stats"><div><strong id="adminTotal">—</strong><span>إجمالي الحالات</span></div><div><strong id="adminPending">—</strong><span>اعتراضات تنتظر المراجعة</span></div></div><div id="adminModerationList" class="admin-moderation-list"><p>جارٍ تحميل الحالات…</p></div></section>';
  document.body.appendChild(overlay);
- const goldButton=document.createElement("button");goldButton.type="button";goldButton.className="admin-gold-toggle";syncOwnerGoldButton(goldButton);overlay.querySelector(".seif-admin-panel").insertBefore(goldButton,overlay.querySelector(".admin-stats"));
- goldButton.addEventListener("click",()=>{const enabled=localStorage.getItem(OWNER_GOLD_KEY)!=="enabled";if(enabled)localStorage.setItem(OWNER_GOLD_KEY,"enabled");else localStorage.removeItem(OWNER_GOLD_KEY);applyOwnerGoldStyle(enabled);syncOwnerGoldButton(goldButton);});
+ const goldButton=document.createElement("button");goldButton.type="button";goldButton.className="admin-gold-toggle";syncOwnerGoldButton(goldButton,activeGoldDeviceId,currentGoldDeviceId);overlay.querySelector(".seif-admin-panel").insertBefore(goldButton,overlay.querySelector(".admin-stats"));
+ const goldNote=document.createElement("small");goldNote.className="admin-gold-note";goldNote.textContent="المظهر الذهبي مرتبط بجهاز واحد فقط. عند نقله إلى جهاز آخر يتوقف تلقائيًا على الجهاز السابق.";goldButton.after(goldNote);
+ goldButton.addEventListener("click",async()=>{goldButton.disabled=true;try{const nextDeviceId=activeGoldDeviceId===currentGoldDeviceId?null:currentGoldDeviceId;const result=await seifOwnerClient.from("seif_admin_roles").update({gold_device_id:nextDeviceId}).eq("user_id","4ce247c3-6439-40b4-8de7-0130895f3e01").select("gold_device_id").maybeSingle();if(result.error)throw result.error;if(!result.data)throw new Error("لم يتم تحديث جهاز المظهر الذهبي.");activeGoldDeviceId=result.data.gold_device_id||null;applyOwnerGoldStyle(activeGoldDeviceId===currentGoldDeviceId);syncOwnerGoldButton(goldButton,activeGoldDeviceId,currentGoldDeviceId);status(activeGoldDeviceId===currentGoldDeviceId?"تم تخصيص المظهر الذهبي لهذا الجهاز وحده.":"تم إيقاف المظهر الذهبي عن هذا الجهاز.");}catch(error){alert("تعذر تحديث جهاز المظهر الذهبي: "+(error.message||"خطأ غير معروف"));}finally{goldButton.disabled=false;}});
  const close=()=>overlay.hidden=true;overlay.querySelector(".admin-close").addEventListener("click",close);overlay.addEventListener("click",e=>{if(e.target===overlay)close();});button.addEventListener("click",async()=>{overlay.hidden=false;await loadAdminCases();});
  async function loadAdminCases(){
   const root=document.getElementById("adminModerationList");root.textContent="جارٍ تحميل الحالات…";
@@ -895,8 +887,8 @@ function createOwnerPanel(){
  try{
   const client=await loadSeifOwnerClient();const {data:{session}}=await client.auth.getSession();
   if(!session?.user||session.user.id!=="4ce247c3-6439-40b4-8de7-0130895f3e01")return;
-  const {data:role,error}=await client.from("seif_admin_roles").select("role").eq("user_id",session.user.id).maybeSingle();
+  const {data:role,error}=await client.from("seif_admin_roles").select("role,gold_device_id").eq("user_id",session.user.id).maybeSingle();
   if(error||role?.role!=="owner")return;
-  createOwnerPanel();
+  createOwnerPanel(role.gold_device_id);
  }catch(error){console.warn("Owner panel is not available",error);}
 })();
