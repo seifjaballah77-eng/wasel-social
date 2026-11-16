@@ -104,7 +104,7 @@ async function answerIncomingCall(accept){
   const result=accept?"accepted":"declined";
   await api("wasel_chat_messages?id=eq."+encodeURIComponent(offer.id)+"&recipient_id=eq."+encodeURIComponent(myId),{method:"PATCH",headers:{"Prefer":"return=minimal"},body:JSON.stringify({body:[CALL_OFFER_PREFIX,offer.kind,result,String(Date.now())].join("|")})});
  }catch(e){console.warn("Could not update call request",e);}
- if(accept){await selectPerson(offer.callerId);await startCall(offer.kind,true,offer.roomName);}
+ if(accept){await selectPerson(offer.callerId);await startCall(offer.kind,true,offer.roomName,offer.id);}
  else{status("تم رفض المكالمة.");}
 }
 function formatCallDuration(seconds){const n=Math.max(0,Number(seconds)||0);return String(Math.floor(n/60)).padStart(2,"0")+":"+String(n%60).padStart(2,"0");}
@@ -161,7 +161,7 @@ async function testCallConnection(kind){
   status(message,true);alert(message+"\nتحقق من أذونات الموقع والأجهزة ثم أعد المحاولة.");return false;
  }
 }
-async function startCall(kind,isIncoming=false,sharedRoomName=null){
+async function startCall(kind,isIncoming=false,sharedRoomName=null,incomingOfferId=null){
  if(selectedId&&!canContact(selectedId)){contactRestrictionNotice();return;}
  if(!selectedId||selectedId===myId){status("اختر صديقًا من قائمة الأشخاص أولًا.",true);return;}
  const person=people.find(p=>p.user_id===selectedId);if(!person){status("لم يتم العثور على جهة الاتصال. حدّث قائمة الأشخاص أولًا.",true);return;}
@@ -169,7 +169,7 @@ async function startCall(kind,isIncoming=false,sharedRoomName=null){
  if(!isIncoming&&!await testCallConnection(kind)){status("تم إلغاء المكالمة قبل الاتصال.",true);return;}
  const peerId=selectedId;
  const roomName=sharedRoomName||("seifmessages-"+[myId,peerId].sort().join("-")+"-"+crypto.randomUUID());
- let offerMessageId=null;
+ let offerMessageId=incomingOfferId||null;
  if(!isIncoming){
   try{
    const inserted=await api("wasel_chat_messages",{method:"POST",headers:{"Prefer":"return=representation"},body:JSON.stringify({room_id:ROOM,sender_id:myId,sender_name:currentName()||"مستخدم",recipient_id:peerId,body:[CALL_OFFER_PREFIX,kind,"ringing",String(Date.now()),roomName].join("|"),image_data:null})});
@@ -188,9 +188,13 @@ async function startCall(kind,isIncoming=false,sharedRoomName=null){
    try{
     const rows=await api("wasel_chat_messages?select=body&id=eq."+encodeURIComponent(offerMessageId));
     const bits=(rows[0]?.body||"").split("|");
+    if(bits[2]==="ended"){
+     status("أنهى الطرف الآخر المكالمة.");
+     await endCall(true);return;
+    }
     if(bits[2]==="declined"||bits[2]==="missed"){
      status(bits[2]==="declined"?"رفض الطرف الآخر المكالمة.":"لم يتم الرد على المكالمة.",true);
-     await endCall();return;
+     await endCall(true);return;
     }
     if(!info.peerJoined&&Date.now()-info.startedAt>45000){
      status("انتهت مهلة انتظار رد الطرف الآخر.",true);
@@ -206,13 +210,14 @@ async function startCall(kind,isIncoming=false,sharedRoomName=null){
   activeCallApi=new window.JitsiMeetExternalAPI("meet.jit.si",{roomName,width:"100%",height:"100%",parentNode:mount,lang:"ar",userInfo:{displayName:currentName()||"مستخدم"},configOverwrite:{startWithAudioMuted:false,startWithVideoMuted:kind==="audio",prejoinConfig:{enabled:false},disableDeepLinking:true,p2p:{enabled:true},audioQuality:{stereo:false,opusMaxAverageBitrate:24000,enableOpusDtx:true}},interfaceConfigOverwrite:{TOOLBAR_BUTTONS:kind==="audio"?["microphone","desktop"]:["microphone","camera","desktop"],SHOW_JITSI_WATERMARK:false,SHOW_WATERMARK_FOR_GUESTS:false}});
   activeCallApi.addListener("videoConferenceJoined",()=>{if(activeCallInfo)activeCallInfo.joinedAt=Date.now();status("أنت داخل المكالمة.");$("callModalNote").textContent="مدة المكالمة "+formatCallDuration(0);clearInterval(callClockTimer);callClockTimer=setInterval(()=>{if(activeCallInfo&&activeCallInfo.joinedAt)$("callModalNote").textContent="مدة المكالمة "+formatCallDuration(Math.floor((Date.now()-activeCallInfo.joinedAt)/1000));},1000);});
   activeCallApi.addListener("participantJoined",()=>{if(activeCallInfo)activeCallInfo.peerJoined=true;$("callModalNote").textContent="انضم صديقك إلى المكالمة.";status("انضم الطرف الآخر إلى المكالمة.");});
-  activeCallApi.addListener("participantLeft",()=>{$("callModalNote").textContent="غادر أحد المشاركين المكالمة.";});
+  activeCallApi.addListener("participantLeft",()=>{if(activeCallInfo){status("غادر الطرف الآخر المكالمة.");endCall(true);}});
   activeCallApi.addListener("readyToClose",()=>endCall());
   activeCallApi.addListener("errorOccurred",e=>{status("حدث خطأ في الاتصال: "+(e?.message||"تحقق من صلاحيات الكاميرا والميكروفون."),true);});
  }catch(e){status("تعذر بدء المكالمة: "+e.message,true);await endCall();}
 }
-async function endCall(){
+async function endCall(remoteEnded=false){
  const info=activeCallInfo;activeCallInfo=null;clearInterval(callClockTimer);callClockTimer=null;clearInterval(callSignalTimer);callSignalTimer=null;
+ if(info?.offerMessageId&&!remoteEnded){try{await api("wasel_chat_messages?id=eq."+encodeURIComponent(info.offerMessageId)+"&room_id=eq."+encodeURIComponent(ROOM),{method:"PATCH",headers:{"Prefer":"return=minimal"},body:JSON.stringify({body:[CALL_OFFER_PREFIX,info.kind,"ended",String(Date.now())].join("|")})});}catch(error){console.warn("Could not notify the other participant that the call ended",error);}}
  const apiInstance=activeCallApi;activeCallApi=null;
  if(apiInstance){try{apiInstance.executeCommand("hangup");}catch(e){}try{apiInstance.dispose();}catch(e){}}
  const overlay=$("callModal");if(overlay){overlay.hidden=true;overlay.classList.remove("is-minimized");}const mount=$("jitsiMount");if(mount)mount.replaceChildren();
