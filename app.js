@@ -1019,7 +1019,9 @@ const currentGoldDeviceId=ownerGoldDeviceId();let activeGoldDeviceId=registeredG
      verify.addEventListener("click",async()=>{verify.disabled=true;try{await window.seifModerationAction(item.is_verified?"unverify":"verify",item.user_id,{display_name:item.display_name});await loadAdminTab("users");}catch(e){alert(e.message);verify.disabled=false;}});
      const suspend=document.createElement("button");suspend.type="button";suspend.textContent="حظر مؤقت / دائم";
      suspend.addEventListener("click",async()=>{const reason=prompt("سبب الحظر:","مخالفة شروط الاستخدام");if(reason===null)return;const hours=prompt("مدة الحظر بالساعات. اكتب 0 للحظر الدائم:","24");if(hours===null)return;const n=Number(hours);if(!Number.isFinite(n)||n<0||n>8760){alert("أدخل عدد ساعات من 0 إلى 8760.");return;}if(!confirm("تأكيد حظر "+(item.display_name||"هذا المستخدم")+"؟"))return;suspend.disabled=true;try{await window.seifModerationAction("suspend",item.user_id,{display_name:item.display_name,reason,duration_hours:n});await loadAdminCases();await loadAdminTab("users");}catch(e){alert(e.message);suspend.disabled=false;}});
-     actions.append(verify,suspend);card.append(actions);root.append(card);
+     const remove=document.createElement("button");remove.type="button";remove.textContent="حذف الحساب نهائيًا";remove.className="admin-danger-button";
+     remove.addEventListener("click",async()=>{const confirmation=prompt("حذف حساب "+(item.display_name||"هذا المستخدم")+" نهائيًا؟\nاكتب حذف للتأكيد:");if(confirmation!=="حذف")return;if(!confirm("سيتم حذف ملف الحساب وجميع رسائله وسجل تعليقاته. لا يمكن التراجع. هل تتابع؟"))return;remove.disabled=true;try{await window.seifModerationAction("delete_account",item.user_id,{display_name:item.display_name});await loadAdminTab("users");await loadAdminCases();status("تم حذف الحساب وبيانات محادثاته.");}catch(e){alert(e.message||"تعذر حذف الحساب.");remove.disabled=false;}});
+     actions.append(verify,suspend,remove);card.append(actions);root.append(card);
     });
    }else if(tab==="security"){
     root.replaceChildren();const h=document.createElement("strong");h.textContent="فحص حالة التشفير";root.append(h);
